@@ -101,7 +101,7 @@ The product therefore requires:
 - cross-layer traceability sufficient for long-form navigation;
 - coherent Canon state and occurrence;
 - explicit separation of chronology and narrative presentation where needed;
-- governed prose realization and persistent style/voice guidance;
+- governed prose realization and support for persistent style/voice guidance;
 - stable manuscript identity independent of filename and title;
 - coherent save and persistence semantics;
 - Dataset schema identity separate from Ruleset identity;

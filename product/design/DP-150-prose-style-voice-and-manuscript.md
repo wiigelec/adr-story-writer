@@ -75,8 +75,9 @@ their owning Canon or Plot layer.
 Long-form fiction often requires persistent realization policy independent of
 individual Beats.
 
-The product may therefore maintain accepted prose guidance covering matters
-such as:
+The product must support accepted persistent prose guidance, while an
+individual story may omit or leave such guidance undeveloped. Supported
+guidance may cover matters such as:
 
 - narrative voice,
 - viewpoint policy,

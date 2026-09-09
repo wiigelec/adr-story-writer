@@ -19,8 +19,9 @@ Identity is not required for every sentence, phrase, or incidental detail.
 
 ## Stable Identity
 
-Persisted governed artifacts that participate in durable relationships require
-identity stable across ordinary content revision.
+Governed artifacts intended to participate in durable relationships require
+stable identity while in governed working state. That identity is preserved
+through ordinary persistence and content revision.
 
 Stable identity lets the system distinguish:
 

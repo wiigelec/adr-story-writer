@@ -35,8 +35,14 @@ The principal semantic direction is:
       ↓
     Manuscript
 
-This is a meaning relationship, not a requirement that every project fully
+This is the principal constraint-and-realization relationship, not the complete
+graph of Story Writer operations and not a requirement that every project fully
 materialize every layer before useful work occurs.
+
+Explicit acceptance may promote intended Plot occurrence into Canon Events.
+Such promotion is a governed Canon operation: it establishes accepted truth and
+may change canonical state. It is not silent reverse propagation through the
+refinement workflow.
 
 ## Plot Refinement
 

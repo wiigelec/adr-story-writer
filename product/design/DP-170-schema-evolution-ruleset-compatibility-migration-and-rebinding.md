@@ -42,7 +42,11 @@ compatible merely because names or semantic versions appear similar.
 Compatibility is a governed determination.
 
 It may be exact, backward-compatible, migration-required, unsupported, or
-otherwise classified as Product and Planning later define.
+otherwise classified as later Product Design establishes.
+
+Planning defines the technical realization and mechanically decidable criteria
+needed to apply Product-established compatibility classifications; Planning
+does not invent new semantic compatibility classes.
 
 ## Migration
 

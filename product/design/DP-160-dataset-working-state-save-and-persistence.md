@@ -40,6 +40,14 @@ Working state may contain:
 
 Conversation is not automatically copied into Dataset state.
 
+During an active session, current governed working state is the operational
+story state for subsequent governed work.
+
+Persisted Dataset state remains the last persisted story authority and recovery
+baseline. Accepted-but-unsaved working changes therefore supersede their
+persisted predecessors for active-session reasoning without becoming persisted
+authority until save.
+
 ## Session Loss
 
 If a session ends without successful authorized persistence, persisted Dataset
