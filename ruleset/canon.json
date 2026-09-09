@@ -1,0 +1,14 @@
+{
+  "question": "What is true?",
+  "components": {
+    "character": "Persistent canonical truths about people and person-like actors, including identity, traits, relationships, history, knowledge or beliefs when relevant, possessions, injuries, capabilities, and current status.",
+    "setting": "Persistent canonical truths about the world, including locations, environments, institutions, factions, cultures, technology, supernatural rules, geography, and persistent significant objects.",
+    "events": "Accepted canonical occurrence through time; what actually happened in story history."
+  },
+  "rules": [
+    "Canon constrains downstream Plot and Prose.",
+    "Character and Setting primarily represent canonical state; Events represents canonical occurrence.",
+    "Accepted Events may change Character or Setting state.",
+    "Plot and Prose may propose new consequential facts but may not silently make them Canon."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "directory": "chapters",
+  "format": "markdown",
+  "unit": "chapter",
+  "filename_convention": "one Markdown file per chapter",
+  "rules": [
+    "Chapter files are author-facing accepted manuscript state.",
+    "Generated candidate prose is not automatically accepted manuscript text.",
+    "Chapter prose may be assembled, replaced, or revised only through an author-governed operation."
+  ]
+}

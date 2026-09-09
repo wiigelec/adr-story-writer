@@ -1,0 +1,38 @@
+{
+  "packaging_profile": "split-git",
+  "providers": [
+    "generic-self-contained"
+  ],
+  "runtime": {
+    "ruleset": {
+      "representation": "tree",
+      "files": {
+        "identity.json": "/identity",
+        "authority.json": "/authority",
+        "workflow.json": "/workflow",
+        "canon.json": "/canon",
+        "plot.json": "/plot",
+        "prose.json": "/prose",
+        "workshop-agent.json": "/workshop_agent",
+        "manuscript.json": "/manuscript"
+      }
+    },
+    "dataset": {
+      "representation": "tree",
+      "files": {
+        "instance.json": "/instance",
+        "story.json": "/story",
+        "canon/character.json": "/canon/character",
+        "canon/setting.json": "/canon/setting",
+        "canon/events.json": "/canon/events",
+        "plot/synopsis.json": "/plot/synopsis",
+        "plot/outline.json": "/plot/outline",
+        "plot/sequence.json": "/plot/sequence",
+        "prose/beats.json": "/prose/beats",
+        "prose/modes.json": "/prose/modes",
+        "prose/pseudo-prose.json": "/prose/pseudo_prose",
+        "chapters/manifest.json": "/chapters"
+      }
+    }
+  }
+}

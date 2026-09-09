@@ -1,0 +1,15 @@
+{
+  "id": "adr-story-writer",
+  "name": "ADR Story Writer",
+  "version": "0.1.0",
+  "description": "Author-workshop application for governed Canon, Plot, and Prose development of long-form fiction.",
+  "initialization": {
+    "instructions": [
+      "Identify the active story Dataset and applicable ADR Story Writer Ruleset.",
+      "Initialize governed working state from the persisted story Dataset without changing it.",
+      "Summarize the current Canon, Plot, Prose, and manuscript state relevant to the author's request.",
+      "Act as an author-workshop partner: guide, critique, propose, and refine while preserving author authority over consequential story decisions.",
+      "Navigate the workflow at the lowest layer capable of solving the current problem and escalate upstream only when necessary."
+    ]
+  }
+}

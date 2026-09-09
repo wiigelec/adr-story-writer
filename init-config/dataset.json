@@ -1,0 +1,30 @@
+{
+  "instance": {
+    "id": "adr-story-writer-dataset-template"
+  },
+  "story": {
+    "application": "adr-story-writer",
+    "dataset_role": "story",
+    "title": null,
+    "status": "template"
+  },
+  "canon": {
+    "character": {},
+    "setting": {},
+    "events": []
+  },
+  "plot": {
+    "synopsis": {},
+    "outline": [],
+    "sequence": []
+  },
+  "prose": {
+    "beats": {},
+    "modes": {},
+    "pseudo_prose": {}
+  },
+  "chapters": {
+    "format": "markdown",
+    "files": []
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "identity": {
+    "application": "adr-story-writer",
+    "component": "ruleset",
+    "version": "0.1.0"
+  },
+  "authority": {
+    "dataset_is_persisted_story_authority": true,
+    "conversation_is_not_automatically_story_state": true,
+    "agent_may_propose_but_not_silently_accept_consequential_changes": true,
+    "save_requires_user_request_or_acceptance": true
+  },
+  "workflow": {
+    "high_level": [
+      "canon",
+      "plot",
+      "prose"
+    ],
+    "direction": "Canon constrains Plot; Plot directs Prose; Prose realizes accepted manuscript output.",
+    "navigation": "Workflow is navigable in both directions for diagnosis, but upstream mutation requires explicit treatment at the owning layer.",
+    "lowest_layer_rule": "Resolve a problem at the lowest workflow layer capable of preserving required meaning; escalate upstream only when necessary.",
+    "consequential_change_rule": "A consequential fact or structural decision invented downstream remains a proposal until explicitly accepted at its owning Canon or Plot layer."
+  },
+  "canon": {
+    "question": "What is true?",
+    "components": {
+      "character": "Persistent canonical truths about people and person-like actors, including identity, traits, relationships, history, knowledge or beliefs when relevant, possessions, injuries, capabilities, and current status.",
+      "setting": "Persistent canonical truths about the world, including locations, environments, institutions, factions, cultures, technology, supernatural rules, geography, and persistent significant objects.",
+      "events": "Accepted canonical occurrence through time; what actually happened in story history."
+    },
+    "rules": [
+      "Canon constrains downstream Plot and Prose.",
+      "Character and Setting primarily represent canonical state; Events represents canonical occurrence.",
+      "Accepted Events may change Character or Setting state.",
+      "Plot and Prose may propose new consequential facts but may not silently make them Canon."
+    ]
+  },
+  "plot": {
+    "question": "What happens?",
+    "components": {
+      "synopsis": "Broad narrative shape: premise, principal conflict, major developments, climax, resolution, and story-scale direction.",
+      "outline": "Ordered narrative structure such as parts, acts, chapters, major scenes, turning points, or equivalent structural units.",
+      "sequence": "Most concrete Plot layer: ordered intended occurrence at scene or scene-group scale, including actions, exchanges, discoveries, decisions, revelations, emotional movements, and intended outcomes."
+    },
+    "refinement": [
+      "synopsis",
+      "outline",
+      "sequence"
+    ],
+    "rules": [
+      "Lower Plot layers preserve accepted meaning of higher Plot layers unless an explicit upstream revision is made.",
+      "Sequence remains intended occurrence until author acceptance; accepted occurrence may then be recorded as Canon Events and reflected in Character or Setting state."
+    ]
+  },
+  "prose": {
+    "question": "How should intended occurrence be expressed?",
+    "components": {
+      "beats": "Smallest governed narrative-intent units used to prepare a Sequence for prose realization.",
+      "modes": {
+        "purpose": "Assign or develop Beats through narrative mode while remaining machine-reviewable.",
+        "types": {
+          "action": "Observable physical activity and external behavior.",
+          "dialogue": "Spoken exchange.",
+          "exposition": "Contextual, descriptive, explanatory, or connective narrative material.",
+          "internal": "Viewpoint-character thought, perception, judgment, memory, feeling, or other internal experience."
+        }
+      },
+      "pseudo_prose": "Near-prose realization establishing order, paragraph-scale flow, emphasis, transitions, viewpoint handling, and rough wording without requiring final literary polish."
+    },
+    "refinement": [
+      "beats",
+      "modes",
+      "pseudo_prose",
+      "final_prose"
+    ],
+    "rules": [
+      "Final prose is manuscript output, not a fourth governed Prose workflow component.",
+      "Prose may add non-consequential sensory and expressive detail necessary for readable fiction.",
+      "Prose must not silently introduce consequential Canon facts, resolve unapproved Plot choices, or contradict accepted upstream artifacts."
+    ]
+  },
+  "workshop_agent": {
+    "role": "Author-workshop partner while navigating the Story Writer workflow.",
+    "may": [
+      "guide the author through the active workflow layer",
+      "identify missing or conflicting information",
+      "propose alternatives",
+      "critique structure and realization",
+      "transform accepted upstream artifacts into downstream candidate artifacts",
+      "diagnose when a downstream problem is owned upstream",
+      "help revise candidate or accepted artifacts at the author's direction"
+    ],
+    "must": [
+      "preserve author authority over consequential story decisions",
+      "distinguish conversation, working candidate state, accepted artifact state, and persisted Dataset state",
+      "treat backward navigation as diagnostic and collaborative rather than permission for silent upstream rewriting"
+    ]
+  },
+  "manuscript": {
+    "directory": "chapters",
+    "format": "markdown",
+    "unit": "chapter",
+    "filename_convention": "one Markdown file per chapter",
+    "rules": [
+      "Chapter files are author-facing accepted manuscript state.",
+      "Generated candidate prose is not automatically accepted manuscript text.",
+      "Chapter prose may be assembled, replaced, or revised only through an author-governed operation."
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "question": "What happens?",
+  "components": {
+    "synopsis": "Broad narrative shape: premise, principal conflict, major developments, climax, resolution, and story-scale direction.",
+    "outline": "Ordered narrative structure such as parts, acts, chapters, major scenes, turning points, or equivalent structural units.",
+    "sequence": "Most concrete Plot layer: ordered intended occurrence at scene or scene-group scale, including actions, exchanges, discoveries, decisions, revelations, emotional movements, and intended outcomes."
+  },
+  "refinement": [
+    "synopsis",
+    "outline",
+    "sequence"
+  ],
+  "rules": [
+    "Lower Plot layers preserve accepted meaning of higher Plot layers unless an explicit upstream revision is made.",
+    "Sequence remains intended occurrence until author acceptance; accepted occurrence may then be recorded as Canon Events and reflected in Character or Setting state."
+  ]
+}

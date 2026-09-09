@@ -1,0 +1,27 @@
+{
+  "question": "How should intended occurrence be expressed?",
+  "components": {
+    "beats": "Smallest governed narrative-intent units used to prepare a Sequence for prose realization.",
+    "modes": {
+      "purpose": "Assign or develop Beats through narrative mode while remaining machine-reviewable.",
+      "types": {
+        "action": "Observable physical activity and external behavior.",
+        "dialogue": "Spoken exchange.",
+        "exposition": "Contextual, descriptive, explanatory, or connective narrative material.",
+        "internal": "Viewpoint-character thought, perception, judgment, memory, feeling, or other internal experience."
+      }
+    },
+    "pseudo_prose": "Near-prose realization establishing order, paragraph-scale flow, emphasis, transitions, viewpoint handling, and rough wording without requiring final literary polish."
+  },
+  "refinement": [
+    "beats",
+    "modes",
+    "pseudo_prose",
+    "final_prose"
+  ],
+  "rules": [
+    "Final prose is manuscript output, not a fourth governed Prose workflow component.",
+    "Prose may add non-consequential sensory and expressive detail necessary for readable fiction.",
+    "Prose must not silently introduce consequential Canon facts, resolve unapproved Plot choices, or contradict accepted upstream artifacts."
+  ]
+}

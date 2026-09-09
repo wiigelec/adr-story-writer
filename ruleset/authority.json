@@ -1,0 +1,6 @@
+{
+  "dataset_is_persisted_story_authority": true,
+  "conversation_is_not_automatically_story_state": true,
+  "agent_may_propose_but_not_silently_accept_consequential_changes": true,
+  "save_requires_user_request_or_acceptance": true
+}
