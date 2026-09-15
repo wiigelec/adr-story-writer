@@ -137,6 +137,10 @@ The Product must be able to identify, as applicable:
 A review performed against incomplete or stale governing context must not be
 presented as equivalent to review against the complete applicable context.
 
+If omitted or stale context could materially change the conclusion for a review
+criterion, that criterion is indeterminate until the needed governing context is
+retrieved, refreshed, or otherwise resolved.
+
 ## Review Scope
 
 Review is scope-aware.
@@ -255,6 +259,17 @@ Validation should establish, as applicable, that:
 - and package provenance identifies the governing context.
 
 A package may be mechanically complete yet semantically incomplete.
+
+When required context is missing, validation should distinguish whether:
+
+- the package projection omitted governed state that already exists; or
+- the governing state itself is insufficient or unresolved for the intended
+  task.
+
+The first is a package-construction defect.
+
+The second requires refinement, retrieval, author decision, or preserved
+unresolved state rather than merely rebuilding the same package.
 
 Semantic review is required where determining sufficiency or fidelity depends on
 meaning rather than structure.
@@ -423,6 +438,11 @@ A downstream inconsistency may require reconciliation, but reconciliation does
 not erase the distinction between accepted upstream meaning and accepted
 Manuscript wording.
 
+Accepted Manuscript may therefore become stale, misaligned, or marked as
+requiring reconciliation without losing its accepted wording authority.
+
+Only an authorized Manuscript revision changes that accepted wording authority.
+
 ## Revision Impact Review
 
 When governed state changes, previously valid dependent state may require
@@ -472,6 +492,19 @@ It must not be represented as current review of materially changed state.
 
 ## Review Result
 
+A semantic review may conclude, for the reviewed scope and governing context,
+that the applicable criterion is:
+
+- conforming;
+- non-conforming;
+- or indeterminate.
+
+Indeterminate is not equivalent to pass or fail.
+
+Reviewer confidence may inform escalation, additional review, or workflow policy,
+but confidence does not change semantic authority, acceptance state, or the
+meaning of the reviewed material.
+
 A review result should communicate enough information for an author or later
 process to understand:
 
@@ -485,6 +518,11 @@ process to understand:
 - and what state remains unresolved.
 
 The Product does not require one universal review-report schema.
+
+Review results are derived evidence about identified scope and governing context.
+
+They may be persisted, indexed, compared, or used by later workflows without
+becoming story authority.
 
 Review evidence must be sufficient for the operation that relies on it.
 
@@ -531,9 +569,12 @@ precondition sufficiently for governed response.
 Mechanical validation failure may block an operation that requires structural
 integrity.
 
-Semantic review failure may block acceptance, production approval, generation,
-migration, rebinding, publication, or another operation when the violated
-meaning is material to that operation.
+A non-conforming semantic-review result may block acceptance, production
+approval, generation, migration, rebinding, publication, or another operation
+when the violated meaning is material to that operation.
+
+An indeterminate result may also block an operation when proceeding would require
+assuming the missing semantic conclusion.
 
 Not every finding blocks every operation.
 
@@ -574,6 +615,12 @@ Automatic repair is allowed only when:
 
 If those conditions do not hold, the Product must surface a proposed repair for
 governed review.
+
+When an automatic repair materially changes persisted representation, the Product
+should preserve enough repair provenance for diagnosis, migration, or later
+interpretation where that history remains material.
+
+The Product does not require provenance for every trivial deterministic cleanup.
 
 The fact that a model can generate a plausible correction does not make the
 repair mechanical.
@@ -792,6 +839,12 @@ For example:
 
 A validation profile may compose mechanical checks and semantic-review steps.
 
+A profile may select or compose established requirements and gates.
+
+It must not turn an advisory criterion into a Product-blocking requirement unless
+that blocking behavior is grounded in Product Design or approved Planning that
+realizes Product semantics.
+
 The exact profile representation is Planning.
 
 Profiles must not invent new semantic authority.
@@ -811,6 +864,13 @@ A gate is justified when proceeding despite failure would materially risk:
 - or another Product integrity requirement.
 
 Gates should not be added merely because additional checks are possible.
+
+A blocking gate applies only to the operation and scope for which its requirement
+is material.
+
+A finding that blocks generation, acceptance, migration, or publication does not
+therefore automatically block candidate persistence, inspection, export, or
+unrelated governed work.
 
 Overvalidation can reduce author control by turning implementation preferences
 into hidden policy.
