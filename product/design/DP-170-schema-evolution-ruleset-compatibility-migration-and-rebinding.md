@@ -118,6 +118,11 @@ The exact vocabulary may evolve when concrete compatibility needs arise.
 Planning may implement Product-established compatibility classifications and
 mechanically decidable criteria.
 
+Compatibility classifications describe permitted operations and required
+transitions. They do not themselves change the semantic meaning, authority
+class, acceptance state, production approval, or Manuscript status of Dataset
+contents.
+
 Planning must not invent semantic compatibility merely to make a technical
 upgrade path appear successful.
 
@@ -232,8 +237,15 @@ When migration requires such a choice, the Product must surface the decision.
 
 The migration must not invent the answer merely to complete the upgrade.
 
-Until resolved, affected material may remain unresolved, restricted, or
-candidate as appropriate to the owning semantics.
+Until resolved, the target migration remains incomplete or restricted for the
+affected material.
+
+Existing accepted meaning remains accepted in the source realization and must
+not be demoted to candidate merely because the target cannot represent it
+without an author decision.
+
+Newly proposed target interpretations remain candidate until accepted according
+to their owning semantics.
 
 ## Migration and Accepted State
 
@@ -306,6 +318,11 @@ directories, databases, object stores, or another mechanism.
 
 The Product requirement is coherent migration outcome and recoverability.
 
+An implementation may persist intermediate migration checkpoints, workspaces, or
+recovery state. Such intermediate state must remain distinguishable from the
+successfully migrated Dataset and must not be used for ordinary governed
+operation as though migration had completed.
+
 ## Migration Provenance
 
 The Product must preserve enough migration provenance to identify:
@@ -328,6 +345,10 @@ Rebinding is not an ordinary save and is not implied by installing or selecting
 a newer Ruleset.
 
 A rebind requires explicit authorization.
+
+Authorization to rebind does not authorize semantic revisions discovered during
+compatibility evaluation. Any such revision requires the acceptance operation
+appropriate to its owning semantic surface.
 
 Before rebinding completes, the Product must establish that the Dataset can be
 operated safely under the target Ruleset, either directly or after required
@@ -388,6 +409,8 @@ If such an operation is supported, it must:
 - identify the material loss;
 - distinguish accepted, candidate, production, derived, and provenance loss;
 - require explicit authorization appropriate to the impact;
+- require deliberate semantic authorization when accepted semantic or
+  Manuscript authority would be discarded or changed;
 - avoid representing the result as semantically equivalent to the source; and
 - preserve recovery or export access to the source where reasonably required by
   the operation.
@@ -417,7 +440,11 @@ because the persisted files appear understandable.
 A Dataset may be structurally damaged or only partially interpretable.
 
 The Product may recover unaffected regions when their identity, role, authority,
-and dependencies can be established independently.
+and material dependencies can be established independently.
+
+If a recovered region materially depends on damaged or unrecoverable state, that
+dependency must be satisfied, repaired, or surfaced as unresolved before the
+region is used for governed work.
 
 Recovered regions must not be treated as sufficient to infer the meaning of
 unrecoverable material.
