@@ -124,6 +124,13 @@ These structures are production-control artifacts.
 
 They do not become additional semantic authority surfaces.
 
+A production-control artifact may be working, persisted as a candidate, or
+production-approved for a defined task.
+
+Production approval means the artifact is approved to govern the identified
+production work. It does not grant Canon, Plot, or Manuscript authority and does
+not silently accept candidate semantic dependencies.
+
 No named structure is mandatory merely because it appears in this Design.
 
 However, DP-120 requires refinement to continue until the selected generation
@@ -294,12 +301,17 @@ A generation package may include:
 - relevant prior accepted text needed for continuity;
 - and validation expectations.
 
-The package must exclude unrelated material when that material does not improve
-correctness and materially increases distraction or unsupported inference risk.
+The package should exclude unrelated material when its inclusion does not
+improve correctness and materially increases distraction or unsupported
+inference risk.
 
 The package is a production-control artifact.
 
 It does not acquire semantic authority over the material it projects.
+
+Candidate inputs remain candidate even when included in a frozen generation
+package, used successfully for generation, or realized repeatedly in downstream
+candidate prose.
 
 ## Minimum Sufficient Context
 
@@ -356,6 +368,10 @@ Resolution may account for:
 A resolved style projection is derived control state.
 
 It must not silently change Canon, Plot, or persistent Prose guidance.
+
+More specific guidance does not automatically override broader accepted
+guidance merely because it is more local. Precedence must follow accepted scope,
+explicit author intent, or another governed rule.
 
 Conflicting guidance must be resolved or surfaced before generation when the
 conflict could materially affect the requested work.
@@ -419,6 +435,13 @@ of variation.
 
 The Product must be able to distinguish protected material from guidance the
 model may freely reinterpret.
+
+Protection may be:
+
+- **verbatim protection**, where specified wording must remain unchanged; or
+- **semantic or structural protection**, where the governed meaning, ordering,
+  role, or function must be preserved while wording may vary within the stated
+  allowance.
 
 Protected material may include:
 
