@@ -96,8 +96,9 @@ It does not require a dedicated Setting storage partition.
 
 ## Events
 
-An Event is accepted Canon occurrence whose identity or effects matter to
-durable story reasoning.
+An Event is accepted Canon occurrence represented durably because the occurrence
+itself, its temporal placement, its effects, or its relationships matter to
+story reasoning.
 
 An Event may:
 
@@ -133,18 +134,27 @@ accepted meanings remain coherent.
 
 ## Event Effects
 
-An Event may have direct and indirect effects.
+An Event may have constitutive effects and downstream consequences.
 
-Direct effects are Canon changes intentionally established by the Event.
+A constitutive effect is Canon meaning that is part of what the accepted Event
+itself establishes.
 
-Indirect consequences may be known, unresolved, delayed, conditional, or
-discovered later.
+If accepting an Event necessarily establishes such an effect, the Event and
+that effect must be accepted coherently. The Product must not accept the Event
+while leaving a constitutive effect unresolved when doing so would make the
+accepted occurrence semantically incomplete or contradictory.
 
-The Product must not invent consequential Event effects merely to make a state
+Downstream consequences are later, indirect, contingent, or separately
+author-governed results that follow from the Event without being part of the
+Event's accepted meaning.
+
+Downstream consequences may remain unknown, delayed, conditional, or candidate.
+
+The Product must not invent consequential effects merely to make a state
 transition appear complete.
 
-Where an Event implies a material change but the resulting Canon meaning is not
-yet resolved, that unresolved meaning remains candidate according to DP-110.
+Where a possible consequence is not required by the accepted Event itself and
+has not yet been resolved, it remains candidate according to DP-110.
 
 ## Accepted Future Occurrence
 
@@ -209,6 +219,13 @@ making the believed proposition objectively true.
 Knowledge and belief may change over time.
 
 Such changes may be established by Events or direct accepted state revision.
+
+Direct state revision may correct or establish Canon without requiring a durable
+Event when the occurrence or transition itself is not material to later story
+reasoning.
+
+When how, when, or why the transition occurred is materially significant,
+direct state revision must not erase that historically meaningful occurrence.
 
 Reader-information intent remains Plot according to DP-130.
 
@@ -282,6 +299,11 @@ The Product may know some temporal relations without knowing all absolute times.
 Temporal reasoning must preserve accepted constraints without manufacturing
 precision that the author has not established.
 
+Temporal ordering, correlation, proximity, or narrative juxtaposition does not
+by itself establish Canon causality.
+
+A causal relationship is Canon only when accepted as such.
+
 ## Duration and Interval State
 
 Some Canon meaning holds over an interval rather than at a point.
@@ -310,6 +332,13 @@ The Product must distinguish between:
 
 The Product must not convert any of these states into false certainty for
 generation, validation, indexing, or schema convenience.
+
+Author-undecided meaning is not accepted Canon merely because the unresolved
+question is known to the Product.
+
+Accepted ambiguity is itself governed Canon meaning when the author
+intentionally accepts that story reality remains unresolved at the identified
+scope.
 
 Where unresolved meaning materially affects downstream work, it remains
 candidate or explicitly ambiguous according to DP-110 and DP-130.
