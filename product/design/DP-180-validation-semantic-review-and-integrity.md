@@ -465,30 +465,20 @@ The exact vocabulary is a Planning decision.
 
 The classification must not itself choose the semantic correction.
 
-## Validation Freshness
+## Validation and Review Freshness
 
-Validation results are relative to the revisions and governing context reviewed.
+Validation and semantic-review results are relative to the revisions and
+governing context evaluated.
 
-A result may become stale when a material dependency changes.
+A result may become stale when a material dependency, accepted revision,
+production control, candidate assumption, or generation package changes.
 
-The Product must not continue to treat a stale validation result as current
-evidence when the change could affect the reviewed conclusion.
+A stale result must not be presented as current evidence when the change could
+affect its conclusion, though it may remain useful historical evidence.
 
-Where practical, validation provenance should permit the Product to determine
-what governing revisions or scopes the result depended upon.
-
-The exact cache-invalidation or freshness mechanism is Planning.
-
-## Semantic Review Freshness
-
-Semantic review can also become stale.
-
-An upstream accepted revision, production-control change, candidate-assumption
-change, or package change may invalidate a previous semantic-review conclusion.
-
-A prior review may remain useful historical evidence.
-
-It must not be represented as current review of materially changed state.
+Where practical, result provenance should identify the governing revisions or
+scopes needed to determine freshness. Exact freshness and cache-invalidation
+mechanisms are Planning.
 
 ## Review Result
 
@@ -589,64 +579,40 @@ Blocking behavior must be scoped to the operation and risk.
 
 Validation and repair are distinct operations.
 
-A validator or reviewer may propose a repair.
+A validator or reviewer may propose a repair, but applying it follows the
+authority and approval semantics of the thing being changed.
 
-Applying a repair must follow the authority and approval semantics of the thing
-being changed.
-
-Mechanical repair may be automatic only when the correct result is determined
-without a consequential semantic choice.
-
-Examples may include rebuilding a derived index or restoring a deterministic
-reference representation.
-
-A repair that changes Canon, Plot, Prose meaning, production intent, or accepted
-Manuscript wording is a governed revision, not validation.
-
-## Automatic Repair
-
-Automatic repair is allowed only when:
+Automatic mechanical repair is allowed only when:
 
 - the intended result is mechanically determined;
 - no unresolved consequential choice exists;
 - authority classification is preserved;
-- material identity and dependencies are preserved;
-- and the operation does not silently accept or approve candidate meaning.
+- material identity and dependencies are preserved; and
+- the operation does not silently accept or approve candidate meaning.
 
-If those conditions do not hold, the Product must surface a proposed repair for
-governed review.
+Examples include rebuilding a derived index or restoring a deterministic
+reference representation.
 
-When an automatic repair materially changes persisted representation, the Product
+If these conditions do not hold, the repair must remain a governed proposal.
+Changing Canon, Plot, Prose meaning, production intent, or accepted Manuscript
+wording is a governed revision, not validation.
+
+When automatic repair materially changes persisted representation, the Product
 should preserve enough repair provenance for diagnosis, migration, or later
-interpretation where that history remains material.
+interpretation where material, without requiring provenance for every trivial
+deterministic cleanup.
 
-The Product does not require provenance for every trivial deterministic cleanup.
-
-The fact that a model can generate a plausible correction does not make the
-repair mechanical.
+A model-generated plausible correction is not thereby a mechanical repair.
 
 ## Validation and Acceptance
 
-Validation may be a prerequisite for acceptance.
+Validation or semantic review may supply evidence required for acceptance, but
+neither is acceptance.
 
-Validation is not acceptance.
-
-Semantic review may recommend acceptance.
-
-Semantic review is not acceptance.
-
-Acceptance remains an explicit authority transition under DP-110.
-
-The Product must not infer acceptance from:
-
-- a clean validation result;
-- absence of findings;
-- reviewer confidence;
-- repeated use;
-- persistence;
-- generation success;
-- migration success;
-- or a candidate appearing in accepted context.
+Acceptance remains an explicit authority transition under DP-110 and must not be
+inferred from a clean result, absence of findings, reviewer confidence, repeated
+use, persistence, generation or migration success, or appearance in accepted
+context.
 
 ## Validation and Persistence
 
@@ -757,54 +723,29 @@ The Product may therefore maintain distinct generation and review projections.
 
 Review access does not alter Plot reveal intent or authorize generator access.
 
-## Independent Review
+## Review Mechanisms and Limitations
 
-Where risk justifies it, review may be performed by a different model, process,
-prompt, or human than the one that generated the candidate.
+Semantic review may be performed by a model, a different model or process than
+the generator, or a human author.
 
-Independence can reduce shared failure modes.
+Independent review can reduce shared failure modes where its reliability value
+justifies the cost, but the Product does not require it for every operation.
 
-The Product does not require independent review for every operation.
+Model-based review is probabilistic: a model may miss defects, invent defects,
+overstate confidence, or import unstated assumptions. Structured output does not
+make a model review infallible. Review design should reduce these risks through
+bounded scope, explicit governing context, attributable criteria, targeted
+questions, and author escalation where uncertainty is material.
 
-Planning may choose where its reliability value justifies the cost.
+Human author review remains valid and must not be displaced by an AI reviewer
+reinterpreting an explicit governed author decision. If human review changes
+story meaning, that change still belongs to the owning semantic surface and
+follows its acceptance semantics.
 
-## Model Review Limitations
-
-Model-based semantic review is probabilistic.
-
-A model may miss defects, invent defects, overstate confidence, or import
-unstated assumptions.
-
-The Product must not treat a model's semantic-review result as infallible simply
-because it is formatted as a structured report.
-
-Review design should reduce these risks through bounded scope, explicit governing
-context, attributable criteria, targeted questions, and author escalation where
-uncertainty is material.
-
-## Human Review
-
-Human author review remains a valid semantic-review mechanism.
-
-The Product must not require an AI reviewer to override or reinterpret an
-author's explicit governed decision.
-
-When human review intentionally changes story meaning, that change still belongs
-to the owning semantic surface and follows its acceptance semantics.
-
-## Review Uncertainty
-
-A semantic reviewer may be unable to determine a conclusion confidently.
-
-Uncertainty is a valid review outcome.
-
-The reviewer should identify the missing or conflicting context where practical.
-
-The Product should respond through retrieval, narrower review, author decision,
-refinement, or preserved unresolved state.
-
-It must not convert uncertainty into fabricated certainty merely to complete a
-workflow.
+Indeterminate or uncertain review is valid. The reviewer should identify missing
+or conflicting context where practical, and the Product should respond through
+retrieval, narrower review, author decision, refinement, or preserved unresolved
+state rather than fabricating certainty.
 
 ## False Positives and False Negatives
 
@@ -916,7 +857,7 @@ Fail-safe behavior protects author authority.
 The Product should support at least these scenarios:
 
 1. A generated scene is mechanically well-formed but leaks hidden Canon; semantic
-   review rejects the candidate without changing Canon.
+   review returns a non-conforming result without changing Canon.
 2. A prose candidate introduces a consequential new motive; review identifies the
    invention and keeps it candidate rather than promoting it.
 3. A generation package omits a material reveal constraint; package validation
