@@ -30,7 +30,9 @@ The Dataset is the Product's durable story memory.
 
 A fresh session must be able to reconstruct the governed project state needed
 for continued work from persisted Dataset state together with the applicable
-Product or Ruleset definition.
+and compatible Product or Ruleset definition.
+
+Compatibility and migration semantics are defined by later Design.
 
 Prior conversation may be useful historical context, but it is not required for
 authoritative continuity.
@@ -90,10 +92,13 @@ project state to determine, as applicable:
 - applicable generation-package provenance where relevant;
 - and other persisted state required to interpret the current task.
 
-Reconstruction need not load the entire Dataset into model context.
+Reconstruction does not mean eagerly loading the entire Dataset into model
+context.
 
-It must instead make persisted state available for reliable retrieval and
-task-specific context construction.
+Its purpose is to establish an interpretable governed project state, preserve
+authority classification, and make reliable task-specific retrieval possible.
+
+Task-specific retrieval then selects the material needed for the current work.
 
 ## Reconstruction Correctness
 
@@ -112,6 +117,10 @@ A reconstructed session must not:
 Where persisted state is ambiguous about authority or dependency, the session
 must surface that ambiguity rather than silently choosing the more authoritative
 interpretation.
+
+When persisted role or authority classification cannot be established reliably,
+the artifact must be treated as unresolved for governed use rather than promoted
+by inference.
 
 ## Retrieval
 
@@ -249,8 +258,12 @@ A partial save must not knowingly produce a persisted state that cannot be
 interpreted correctly.
 
 It must not separate a persisted dependent artifact from material assumptions,
-dependencies, authority classification, or identity needed to understand that
-artifact.
+dependencies, authority classification, identity, production controls, or
+generation provenance needed to understand that artifact.
+
+A generated candidate whose later interpretation materially depends on a
+generation package must not be persisted without retaining the package or enough
+equivalent provenance to identify what governed that generation attempt.
 
 ## Save Coherence
 
@@ -362,6 +375,9 @@ The Product may reconstruct derived views, indexes, summaries, caches, or
 resolved projections from persisted governed state when doing so preserves
 meaning and authority classification.
 
+A persisted derived artifact remains derived. Persistence does not grant it
+semantic authority merely because recomputing it is expensive or inconvenient.
+
 Derived reconstruction must not invent missing consequential meaning.
 
 If reconstruction cannot be performed without choosing among materially
@@ -387,6 +403,14 @@ The persisted Dataset is the ordinary fresh-session recovery baseline.
 
 Where a separately governed recovery mechanism retains newer unsaved state, that
 state must remain distinguishable from the last successful Dataset save.
+
+Recovered accepted working state may resume operational authority at its
+previous accepted scope when the recovery mechanism preserves its identity,
+authority class, and dependencies reliably.
+
+Recovered state is still not durable Dataset state until successfully persisted.
+
+Recovered candidate and production-control material retain their prior status.
 
 Recovery tooling must not convert recovered candidate or working material into
 accepted state merely because it was recovered successfully.
