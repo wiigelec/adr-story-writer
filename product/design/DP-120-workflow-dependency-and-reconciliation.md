@@ -14,7 +14,8 @@ Story Writer controls long-form AI generation through progressive refinement,
 explicit dependency, bounded generation readiness, and deliberate
 reconciliation after change.
 
-Refinement reduces unresolved decisions before generation.
+Refinement reduces or makes explicit decisions that would otherwise be left to
+downstream generation.
 
 Dependency records which governed or candidate meaning materially constrains
 other work.
@@ -47,7 +48,8 @@ whose meaning or control role is intentionally being changed.
 The Product must support top-down refinement from broad author intent to work
 that is sufficiently bounded for reliable model execution.
 
-Each refinement step reduces unresolved decisions left to later steps.
+Each control-bearing refinement step reduces or makes explicit decisions that
+would otherwise be left to downstream generation.
 
 Refinement may add:
 
@@ -156,8 +158,9 @@ before generation.
 The production contract constrains generation. It does not become an
 independent source of story truth.
 
-Later Design defines the detailed structure and fields of production contracts
-and generation packages.
+DP-150 defines the semantic roles and required control properties of production
+contracts and generation packages. Planning defines their detailed fields and
+representation.
 
 ## Generation Readiness
 
@@ -294,8 +297,9 @@ For each materially affected dependent, the Product must be able to determine
 whether confidence in alignment remains sufficient or whether review,
 reconciliation, revision, regeneration, supersession, or removal is required.
 
-This Design does not require a fixed persisted status taxonomy. Later Design or
-Planning may define classifications where useful.
+This Design does not require a fixed persisted status taxonomy. DP-180 and
+Planning may define operation-relevant review or validation classifications where
+useful without turning them into new semantic authority.
 
 ## Reconciliation
 
@@ -373,7 +377,7 @@ Context construction must provide sufficient governing information without
 making correctness depend on unrelated whole-story material.
 
 Detailed context projection and generation-package semantics are defined by
-later Design.
+DP-150.
 
 ## Validation Relationship
 
@@ -409,9 +413,9 @@ acceptance or propagation.
 This Design defines progressive refinement, generation readiness, dependency,
 impact, propagation, and reconciliation meaning.
 
-Later Design may define specific Prose control structures, generation-package
-semantics, context construction, identity and traceability, persistence,
-validation, and generated-view behavior.
+DP-150, DP-160, DP-175, DP-180, and DP-190 define the corresponding Prose
+control, generation-package, persistence, identity/traceability, validation, and
+generated-view semantics.
 
 Planning may choose dependency representations, graph structures, status
 values, invalidation algorithms, workflow commands, context-selection

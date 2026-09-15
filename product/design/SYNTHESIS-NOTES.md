@@ -1,41 +1,26 @@
 # Story Writer Design Synthesis
 
-Status: exploratory; non-normative
+Status: historical; non-normative
 
-## Purpose
+This file records the origin of the completed synthesis effort.
 
-This branch synthesizes a new ADR Story Writer Product Design from three inputs:
+The normative Product Design on this branch is DP-100 through DP-190. Those
+documents supersede this workspace as the source for Product meaning.
 
-- the current `main` Product Design;
+The synthesis drew from:
+
+- the prior `main` Product Design;
 - the `prototype/character-dossier-notes` design work;
-- the demonstrated StoryWriter v2 reference implementation and prose-generation workflow.
+- and the demonstrated StoryWriter v2 reference implementation and
+  prose-generation workflow.
 
-The existing designs and reference implementation are inputs rather than authorities.
+Those inputs remain historical sources rather than Product authority.
 
-The synthesis begins from the Product's primary requirements:
+The synthesis was organized around three requirements:
 
 - prevent consequential AI hallucination and semantic drift;
 - preserve story continuity independently of chat history;
-- progressively reduce broad author intent into bounded generation tasks small enough for reliable model execution.
+- progressively reduce broad author intent into bounded generation tasks small
+  enough for reliable model execution.
 
-## Initial control loop
-
-The working control model is:
-
-    Persist
-      ↓
-    Retrieve
-      ↓
-    Refine
-      ↓
-    Package
-      ↓
-    Generate
-      ↓
-    Validate
-      ↓
-    Accept
-      ↓
-    Persist
-
-This document is a synthesis workspace, not normative Product Design.
+The resulting Product control loop is defined normatively in DP-100.

@@ -216,8 +216,8 @@ and applicable Ruleset rather than relying on conversational memory.
 Broad author intent is progressively decomposed into smaller, more explicit
 planning and realization units.
 
-Refinement is top-down. Each stage reduces unresolved decisions left to later
-stages.
+Refinement is top-down. Each control-bearing stage reduces or makes explicit
+decisions that would otherwise be left to downstream generation.
 
 The Product may employ structures such as synopsis, outline, sequence, scene
 contract, beats, modes, and pseudo-prose where they improve control. The exact
@@ -282,9 +282,10 @@ Mechanical validation does not establish semantic acceptance.
 
 The author accepts, rejects, or revises the candidate at the appropriate scope.
 
-Acceptance may apply to manuscript text, candidate planning or control
-artifacts, or proposed consequential story changes. These are distinct semantic
-operations even when a user interface combines them into a simple interaction.
+The author may semantically accept proposed story meaning, production-approve
+candidate control artifacts for a defined downstream role, or accept manuscript
+text. These are distinct governed operations even when a user interface combines
+them into a simple interaction.
 
 If accepted manuscript contains consequential meaning not already accepted at
 its owning semantic surface, the Product must surface that meaning for explicit
@@ -293,8 +294,9 @@ Plot acceptance.
 
 ## Runtime Architecture
 
-The applicable **Ruleset** defines Product semantics, allowed operations,
-governed structures, and validation meaning.
+The applicable **Ruleset** realizes Product-defined semantics through allowed
+operations, governed structures, and validation behavior. A Ruleset does not
+independently redefine Product meaning.
 
 A **Dataset** persists one story instance and the durable state required to
 resume governed work.
@@ -318,8 +320,8 @@ multi-session work without becoming accepted truth or accepted manuscript.
 
 Generated content does not acquire authority merely because it was saved.
 
-Later Design defines detailed candidate dependency, acceptance, save, and
-reconciliation semantics.
+DP-110, DP-120, and DP-160 define detailed authority, candidate dependency,
+acceptance, reconciliation, save, and persistence semantics.
 
 ## Context Projection Principle
 
@@ -359,8 +361,10 @@ intent unless the local problem actually requires that change.
 The Product may generate dossiers, summaries, reports, indexes, continuity
 views, context projections, or other views for authors or agents.
 
-Generated views are non-authoritative unless later Design explicitly assigns
-them an authority role.
+Generated views are derived and do not become independent story authority.
+
+Meaning represented or edited through a generated view becomes authoritative
+only through the normal governed operation at the semantic surface that owns it.
 
 An edit made through a generated view must resolve to an operation on the
 underlying governed state or candidate state rather than silently creating a
@@ -404,9 +408,10 @@ Product goal.
 
 This Design establishes Product meaning and architectural invariants.
 
-Later Design may define specific authority, acceptance, Canon, Plot, Prose,
+DP-110 through DP-190 refine the authority, acceptance, Canon, Plot, Prose,
 production-control, generation-package, persistence, identity, reconciliation,
-validation, and compatibility semantics.
+validation, compatibility, generated-view, metadata, and simplicity semantics
+established by this architecture.
 
 Planning may choose schemas, identifiers, file layouts, workflow commands,
 retrieval mechanisms, status representations, validation implementations,
