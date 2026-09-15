@@ -7,5 +7,17 @@
   "direction": "Canon constrains Plot; Plot directs Prose; Prose realizes accepted manuscript output.",
   "navigation": "Workflow is navigable in both directions for diagnosis, but upstream mutation requires explicit treatment at the owning layer.",
   "lowest_layer_rule": "Resolve a problem at the lowest workflow layer capable of preserving required meaning; escalate upstream only when necessary.",
-  "consequential_change_rule": "A consequential fact or structural decision invented downstream remains a proposal until explicitly accepted at its owning Canon or Plot layer."
+  "consequential_change_rule": "A consequential fact or structural decision invented downstream remains a proposal until explicitly accepted at its owning Canon or Plot layer.",
+  "governed_production_loop": [
+    "reconstruct",
+    "retrieve",
+    "refine",
+    "contract",
+    "package",
+    "generate_candidate",
+    "review",
+    "accept_or_revise",
+    "persist"
+  ],
+  "generation_readiness_rule": "Do not generate when unresolved consequential meaning is required to bound the task; refine or surface the decision instead."
 }

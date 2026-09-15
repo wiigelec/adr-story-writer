@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "artifact_model": {
+    "required_fields": [
+      "id",
+      "surface",
+      "authority_class",
+      "revision"
+    ],
+    "supported_surfaces": [
+      "canon",
+      "plot",
+      "prose",
+      "manuscript",
+      "production"
+    ],
+    "authority_classes": [
+      "accepted_semantic",
+      "candidate_semantic",
+      "production_candidate",
+      "production_approved",
+      "candidate_manuscript",
+      "accepted_manuscript"
+    ],
+    "optional_control_fields": [
+      "dependencies",
+      "generation_package_id",
+      "reconciliation"
+    ]
+  },
+  "dependency_model": {
+    "required_fields": [
+      "target_id",
+      "target_revision",
+      "authority_basis",
+      "material"
+    ],
+    "authority_basis_values": [
+      "accepted",
+      "candidate"
+    ],
+    "material_candidate_dependencies_block_acceptance": true,
+    "historical_derivation_is_not_automatically_material": true
+  },
+  "acceptance": {
+    "operations": [
+      "semantic_acceptance",
+      "production_approval",
+      "manuscript_acceptance",
+      "revision_acceptance",
+      "persistence_authorization"
+    ],
+    "identifiable_scope_required": true,
+    "closure_required": true,
+    "closure_resolutions": [
+      "accept_dependency",
+      "reconcile_to_accepted",
+      "exclude_from_scope",
+      "leave_dependent_candidate"
+    ]
+  },
+  "session_reconstruction": {
+    "must_preserve": [
+      "authority_class",
+      "revision",
+      "material_dependencies",
+      "production_approval",
+      "generation_provenance",
+      "reconciliation_state",
+      "accepted_manuscript"
+    ],
+    "ambiguous_authority_remains_unresolved": true
+  },
+  "persistence": {
+    "preserves_authority_class": true,
+    "persisted_candidate_remains_candidate": true,
+    "logical_save_requires_coherent_write": true,
+    "failed_save_must_not_be_reported_as_saved": true
+  }
+}

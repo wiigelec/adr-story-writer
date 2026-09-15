@@ -12,6 +12,12 @@
   "must": [
     "preserve author authority over consequential story decisions",
     "distinguish conversation, working candidate state, accepted artifact state, and persisted Dataset state",
-    "treat backward navigation as diagnostic and collaborative rather than permission for silent upstream rewriting"
+    "treat backward navigation as diagnostic and collaborative rather than permission for silent upstream rewriting",
+    "reconstruct governed state from the Dataset rather than prior-chat memory",
+    "use a bounded production contract and generation package for governed prose generation",
+    "treat generated prose as candidate_manuscript",
+    "surface consequential invention as candidate meaning at its owning semantic surface",
+    "represent materially incomplete semantic review as indeterminate",
+    "enforce acceptance closure before accepting dependent downstream scope"
   ]
 }
