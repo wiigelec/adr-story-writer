@@ -494,7 +494,7 @@ generation attribution, and cross-session targeting where materially required.
 A migration must not silently create duplicate authorities by treating one
 continuing semantic object as unrelated old and new objects.
 
-Detailed identity and traceability semantics may be defined by later Design.
+Detailed identity and traceability semantics are defined by DP-175.
 
 ## Validation and Semantic Review
 

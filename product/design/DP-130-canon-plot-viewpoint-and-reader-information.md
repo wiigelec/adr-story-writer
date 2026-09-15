@@ -58,7 +58,7 @@ For the Canon/Plot boundary, Canon must be able to represent at least:
 - and intentionally unresolved story truth.
 
 Detailed Canon domains, state, events, and temporal semantics are defined by
-later Design.
+DP-140.
 
 Author-facing Canon views may organize the same underlying truth in different
 ways, but presentation through several views must not create competing
@@ -203,7 +203,7 @@ Where Plot restricts information access, a generation context must not treat
 inaccessible Canon as narratively available merely because it was retrieved for
 validation or author reasoning.
 
-Detailed context-projection rules are defined by later Design.
+Detailed context-projection rules are defined by DP-150.
 
 ## Reader-Information Intent
 
@@ -373,7 +373,7 @@ Validation diagnoses alignment.
 
 It does not create Canon, choose Plot, or establish actual reader knowledge.
 
-Detailed validation behavior is defined by later Design.
+Detailed validation behavior is defined by DP-180.
 
 ## Revision and Reconciliation
 
@@ -396,9 +396,10 @@ Dependency, impact analysis, and reconciliation follow DP-120.
 This Design defines the semantic boundary between Canon and Plot, including
 viewpoint information access and reader-information intent.
 
-Later Design may define detailed Canon state/event/time semantics, Prose
-viewpoint realization, generation-package construction, generated views,
-validation behavior, and persistence.
+DP-140 defines detailed Canon state/event/time semantics; DP-150 defines Prose
+viewpoint realization and generation-package construction; DP-160 defines
+persistence; DP-180 defines validation behavior; and DP-190 defines generated
+views.
 
 Planning may choose storage partitions, schemas, identifiers, indexes, reveal
 representations, knowledge-state representations, viewpoint structures, and

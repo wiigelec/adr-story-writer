@@ -303,7 +303,7 @@ Revision acceptance supersedes prior accepted meaning at the identified scope.
 
 Revision does not silently rewrite dependent accepted artifacts.
 
-Affected dependents become subject to reconciliation according to later Design.
+Affected dependents become subject to reconciliation according to DP-120.
 
 The Product must preserve enough dependency information to identify materially
 affected downstream state.
@@ -331,7 +331,7 @@ consequential meaning merely to restore consistency.
 When reconciliation cannot preserve author intent without a new consequential
 decision, that decision remains candidate until the author resolves it.
 
-Later Design defines detailed dependency and reconciliation behavior.
+DP-120 defines detailed dependency and reconciliation behavior.
 
 ## Acceptance and Persistence
 
@@ -346,7 +346,7 @@ Persisted working or candidate state remains non-authoritative unless accepted.
 Saving accepted state preserves authority already established by acceptance; it
 does not create that authority.
 
-Later Design defines save boundaries, recovery, and durable Dataset behavior.
+DP-160 defines save boundaries, recovery, and durable Dataset behavior.
 
 ## Failure-Safe Interpretation
 
@@ -362,10 +362,13 @@ unresolved decision.
 This Design defines authority, candidate, acceptance, revision, and
 reconciliation meaning.
 
-Later Design may define detailed dependency and reconciliation behavior,
-acceptance metadata, candidate lifecycle representation, coordinated-operation
-realization, persistence and save behavior, validation gates, and
-user-interface presentation.
+DP-120, DP-160, DP-175, and DP-180 define the downstream dependency,
+reconciliation, persistence, identity/traceability, and validation semantics
+relevant to this authority model.
+
+Planning may define acceptance metadata, candidate lifecycle representation,
+coordinated-operation realization, validation gates, and user-interface
+presentation consistent with those semantics.
 
 Planning may choose schemas, identifiers, status values, transaction
 mechanisms, storage layout, prompts, commands, and other technical realization.

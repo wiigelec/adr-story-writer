@@ -32,7 +32,7 @@ A fresh session must be able to reconstruct the governed project state needed
 for continued work from persisted Dataset state together with the applicable
 and compatible Product or Ruleset definition.
 
-Compatibility and migration semantics are defined by later Design.
+Compatibility and migration semantics are defined by DP-170.
 
 Prior conversation may be useful historical context, but it is not required for
 authoritative continuity.
@@ -364,7 +364,7 @@ A later session must not need to infer identity solely from filename, title,
 array position, conversational description, or incidental ordering when such
 inference could target the wrong governed material.
 
-Detailed identity and traceability semantics may be defined by later Design.
+Detailed identity and traceability semantics are defined by DP-175.
 
 ## Derived and Reconstructable State
 

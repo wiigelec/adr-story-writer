@@ -419,7 +419,7 @@ Validation diagnoses these conditions.
 It does not choose missing Canon meaning or resolve ambiguity on the author's
 behalf.
 
-Detailed validation mechanisms are defined by later Design.
+Detailed validation mechanisms are defined by DP-180.
 
 ## Planning Boundary
 
@@ -429,9 +429,9 @@ semantics.
 DP-130 remains authoritative for the Canon/Plot boundary and reader-information
 ownership.
 
-Later Design may define identity and traceability, Prose controls,
-generation-package construction, persistence, validation, generated views, and
-compatibility.
+DP-150, DP-160, DP-170, DP-175, DP-180, and DP-190 define the corresponding
+Prose/generation-package, persistence, compatibility, identity/traceability,
+validation, and generated-view semantics.
 
 Planning may choose storage layout, schemas, event representations, temporal
 models, knowledge-state structures, indexes, identifiers, and derived-state

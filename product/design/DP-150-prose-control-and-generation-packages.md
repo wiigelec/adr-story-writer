@@ -593,7 +593,8 @@ meaning introduced by generated text.
 
 Such meaning must be resolved at its owning semantic surface under DP-110.
 
-Detailed Manuscript organization and identity may be defined by later Design.
+DP-175 defines Manuscript identity and cross-layer mapping semantics. Planning
+may define detailed physical Manuscript organization.
 
 ## Simplicity Boundary
 

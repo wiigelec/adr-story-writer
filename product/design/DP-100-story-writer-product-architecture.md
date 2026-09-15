@@ -398,8 +398,8 @@ bookkeeping wherever possible.
 
 The architecture does not require giant registries, visible transaction
 ceremonies, hashes on every artifact, numerous user-facing status labels, or
-other governance machinery unless later Design demonstrates that such machinery
-is necessary to preserve required semantics or reliability.
+other governance machinery unless applicable Product Design demonstrates that
+such machinery is necessary to preserve required semantics or reliability.
 
 Internal rigor is permitted. Accidental author-facing bureaucracy is not a
 Product goal.
