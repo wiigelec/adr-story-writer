@@ -145,48 +145,47 @@ control.
 Before prose generation, the Product may assemble a production-control artifact
 that states the local narrative contract for the requested unit.
 
-A production contract may define:
+The contract must be capable of expressing the local boundary, required
+narrative intent, applicable semantic dependencies, information-access
+constraints, invention boundaries, and other controls needed to make the task
+reliably bounded.
 
-- purpose and boundary;
-- entry and exit conditions;
-- required beats or movements;
-- viewpoint and focal access;
-- character knowledge limits;
-- reveal and concealment rules;
-- emotional progression;
-- setting and sensory constraints;
-- applicable style guidance;
-- protected text or terminology;
-- permitted non-consequential invention;
-- prohibited consequential invention;
-- and dependencies required for interpretation.
-
-A production contract may be refined further into near-prose units before
-generation.
+A production contract may be refined further into smaller realization units
+before generation.
 
 The production contract constrains generation. It does not become an
 independent source of story truth.
 
+Later Design defines the detailed structure and fields of production contracts
+and generation packages.
+
 ## Generation Readiness
 
-A unit is generation-ready when all of the following are true:
+Generation readiness is relative to a specific generation task and its intended
+execution context.
+
+A unit is generation-ready for that task when:
 
 - its generation boundary is identifiable;
 - the intended narrative movement is sufficiently specified;
-- material Canon and Plot dependencies are available;
-- unresolved candidate dependencies are explicitly identifiable;
-- viewpoint and information-access constraints are known where applicable;
-- reveal boundaries are known where applicable;
-- applicable persistent Prose/style guidance is available;
+- material Canon and Plot dependencies for the task are available;
+- unresolved candidate dependencies are explicitly declared as working
+  assumptions;
+- applicable viewpoint, information-access, reveal, and persistent Prose/style
+  constraints are available where needed;
 - permitted and prohibited invention are sufficiently clear;
 - and remaining model discretion is primarily local realization rather than
   consequential planning.
 
+A unit that is ready for one task size, model capability, or execution context
+may require further refinement for another.
+
 Generation readiness does not require that every dependency be semantically
 accepted.
 
-Candidate dependencies may be used under DP-110 when their non-authoritative
-status is preserved.
+Candidate dependencies may be used under DP-110 only when their
+non-authoritative status is preserved and their use is declared for the
+generation task.
 
 ## Dependency Principle
 
@@ -213,11 +212,14 @@ Dependency does not transfer semantic ownership.
 The Product need not treat every historical influence, retrieval, prompt input,
 or nearby artifact as a semantic dependency.
 
-A dependency is material when changing or removing the upstream target could
-reasonably change the interpretation, validity, intended realization, or
-acceptability of the dependent target.
+A dependency is material for a particular dependent scope or operation when
+changing or removing the upstream target could reasonably change the
+interpretation, validity, intended realization, or acceptability of that scope
+or operation.
 
-Material dependency is evaluated against current state.
+Materiality is therefore evaluated against current state and the purpose for
+which the dependency is being considered. It is not necessarily a permanent
+global property of the relationship.
 
 Historical derivation may be retained separately for provenance and
 reproducibility.
@@ -232,6 +234,10 @@ Candidate chains are permitted.
 A downstream candidate may continue to depend on unresolved upstream candidate
 meaning as long as that dependency remains identifiable.
 
+When candidate meaning is used to construct or execute a generation task, it
+must be declared as a working assumption for that task rather than silently
+included as if it were accepted authority.
+
 Production approval or further refinement does not silently convert the
 candidate dependency into accepted authority.
 
@@ -239,23 +245,19 @@ Acceptance remains governed by DP-110 acceptance closure.
 
 ## Dependency Precision
 
-Dependency should be recorded at the narrowest useful scope.
+Dependency should be recorded at the narrowest semantically useful scope.
 
 A scene should depend on the specific facts, events, relationships, reveal
 decisions, style constraints, or candidate assumptions that materially govern
 it rather than indiscriminately depending on an entire novel when narrower
 dependency is practical.
 
-Dependency precision supports:
+Dependency precision supports bounded context construction, local regeneration,
+minimal reconciliation, meaningful validation, and long-form navigation.
 
-- bounded context construction;
-- local regeneration;
-- minimal reconciliation;
-- meaningful validation;
-- and long-form navigation.
-
-The Product does not require maximal fine-grained bookkeeping when broader
-dependency is sufficient to preserve correctness.
+The goal is useful semantic precision, not maximal granularity. The Product does
+not require atom-level dependency bookkeeping when a broader relationship is
+sufficient to preserve correctness and support reliable impact analysis.
 
 ## Upstream Revision
 
@@ -288,17 +290,12 @@ longer preserve their governing meaning after a material change.
 Impact analysis follows material dependencies rather than merely artifact
 location or workflow depth.
 
-The Product may determine that a dependent:
+For each materially affected dependent, the Product must be able to determine
+whether confidence in alignment remains sufficient or whether review,
+reconciliation, revision, regeneration, supersession, or removal is required.
 
-- remains aligned;
-- requires review;
-- requires local revision or regeneration;
-- is blocked by an unresolved candidate dependency;
-- has been superseded;
-- or is no longer applicable.
-
-These outcomes describe semantic condition; later Planning may choose persisted
-labels or status representations.
+This Design does not require a fixed persisted status taxonomy. Later Design or
+Planning may define classifications where useful.
 
 ## Reconciliation
 
@@ -336,15 +333,16 @@ broader review may be required.
 
 ## Mechanical Propagation Boundary
 
-Mechanical propagation is permitted only when the transformation preserves
-already-governed meaning and introduces no unresolved consequential choice.
+Automatic propagation is permitted only when accepted state determines the
+semantic result and the transformation introduces no unresolved consequential
+choice.
 
 Examples may include updating a reference, carrying forward an accepted name
 change, rebuilding a context projection, or regenerating a derived view when
-the semantic result is determined by accepted state.
+the required semantic result is determined by governed inputs.
 
-When multiple semantically valid outcomes exist and choosing among them would
-change consequential meaning, automatic propagation must stop.
+If more than one consequentially distinct result is semantically valid, the
+system must not select among them automatically.
 
 The unresolved choice becomes candidate work for author review.
 
@@ -363,19 +361,19 @@ and Outline intent unchanged.
 
 ## Context Construction Relationship
 
-Dependency and refinement jointly determine what enters a generation context.
+Dependency and refinement jointly determine what a generation context must
+represent.
 
 Refinement defines the local task.
 
-Dependencies identify the semantic and candidate inputs materially needed to
-perform that task.
+Dependencies identify the governed and declared candidate inputs materially
+needed to perform that task.
 
-Context construction should include enough information to make the task
-complete while avoiding unrelated story material that increases model
-distraction or encourages unsupported inference.
+Context construction must provide sufficient governing information without
+making correctness depend on unrelated whole-story material.
 
-The generation package records the selected projection and its provenance as
-required by DP-100.
+Detailed context projection and generation-package semantics are defined by
+later Design.
 
 ## Validation Relationship
 
