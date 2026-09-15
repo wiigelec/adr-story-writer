@@ -137,6 +137,14 @@ Scope is operation-relative.
 The same artifact may participate in several distinct scopes for acceptance,
 revision, dependency, generation, validation, or reconciliation.
 
+When a semantic scope participates in a durable dependency, acceptance,
+provenance, reconciliation, or cross-session reference, that scope must remain
+resolvable across ordinary revisions or fail explicitly as stale or unresolved.
+
+Line number, text offset, heading position, array index, or similar incidental
+location must not be the sole durable scope reference when revision could make
+the target ambiguous.
+
 ## Scope Precision
 
 Governed operations should target the narrowest semantically useful scope that
@@ -191,10 +199,16 @@ Examples may include:
 - reordering a chapter;
 - correcting an Event date while preserving the Event itself;
 - revising a production contract;
-- rewriting generated prose under the same bounded task;
+- revising one generated prose candidate without replacing that candidate;
 - or moving an artifact to another file.
 
 Identity preservation does not mean every prior version remains current.
+
+Stable semantic identity answers which continuing governed object is being
+targeted.
+
+Revision or version identity answers which state of that object is being
+referenced.
 
 Revision history and current identity are separate concerns.
 
@@ -231,8 +245,14 @@ and resulting objects when that history matters to:
 A split must not leave several new objects all silently claiming to be the same
 continuing identity.
 
-Planning determines whether one result retains the original identity or all
-results receive new identities with lineage.
+The original identity may continue only where semantic continuity with one
+result can be established without material ambiguity.
+
+Otherwise, the resulting objects require distinct identities with explicit
+lineage to the source.
+
+Planning determines how that continuity and lineage are represented, not which
+semantic result is arbitrarily treated as the original object.
 
 ## Merge
 
@@ -269,14 +289,30 @@ replaced.
 Retirement must remain distinguishable from deletion when historical identity or
 dependencies still matter.
 
-A retired accepted object may require semantic revision before it ceases to be
-current authority.
+Removing an accepted object from current semantic authority requires an
+accepted revision at its owning semantic surface.
 
-Deleting its physical file is not itself such a revision.
+Archiving, hiding, or deleting its physical representation does not itself remove
+that accepted meaning from authority.
+
+Retirement of representation and retirement of accepted semantic authority are
+therefore distinct operations.
 
 ## Relationship Principle
 
-Traceability relationships express governed meaning between identifiable scopes.
+Traceability records material relationships between identifiable scopes that are
+relevant to governed work.
+
+A relationship retains its own role as semantic, production-control, provenance,
+projection, migration, or other traceability information.
+
+Creating or recording a traceability relationship does not itself establish
+Canon, Plot, Prose, or Manuscript meaning unless the owning semantic operation
+separately establishes that meaning.
+
+For example, recording that two Events are temporally adjacent does not create
+Canon causality, and recording generation attribution does not create semantic
+authority.
 
 A relationship is not merely evidence that two artifacts were created near each
 other or mentioned in the same conversation.
@@ -366,6 +402,13 @@ The Product need not record a provenance edge for every true fact when current
 meaning can be interpreted reliably without one.
 
 ## Generation Attribution
+
+A new generation attempt is a distinct execution event even when it uses the same
+bounded task, production contract, or generation package as an earlier attempt.
+
+A newly generated candidate must therefore remain distinguishable from earlier
+generated candidates unless the author is revising one existing candidate rather
+than performing a new generation attempt.
 
 Every persisted generated prose candidate that may later be reviewed,
 regenerated, compared, accepted, or migrated must be attributable to the
@@ -541,6 +584,10 @@ identity must not proceed as though the target were unambiguous.
 
 Repair may preserve one identity and reassign another, or use another governed
 resolution.
+
+If an established identity changes, materially affected dependencies,
+provenance, migration mappings, Manuscript mappings, or cross-session references
+must be preserved, remapped, or surfaced as unresolved.
 
 The exact repair mechanism is Planning.
 
