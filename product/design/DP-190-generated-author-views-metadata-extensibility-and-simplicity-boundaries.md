@@ -59,7 +59,13 @@ Splitting, cloning, importing, forking, or otherwise creating a distinct story
 instance requires distinct identity where the resulting work may diverge
 independently.
 
-Detailed identifier representation is Planning.
+Cloning or forking must not leave two independently diverging story instances
+indistinguishable merely because they began with the same internal content.
+
+Internal semantic identities may be preserved within a distinct story namespace
+or deliberately remapped, but cross-story references must remain unambiguous.
+
+Detailed identifier representation and remapping mechanics are Planning.
 
 ## Story Metadata
 
@@ -320,6 +326,13 @@ Editing rendered text does not silently:
 The Product must map consequential edits back to their appropriate owning
 surfaces before they become authoritative.
 
+If the view was generated from an older source revision and the source has
+materially changed, a consequential edit must not be applied as though it targeted
+the unchanged current source.
+
+The Product must reconcile, rebase, narrow, or otherwise surface the stale-view
+conflict before applying the governed change.
+
 ## Coordinated View Edits
 
 One human-facing edit may imply several governed changes.
@@ -370,12 +383,18 @@ If a view contains author-customized presentation such as:
 - section order;
 - collapsed regions;
 - display labels;
-- annotations;
+- presentation-only annotations;
 - filters;
 - layout;
 - or other presentation preferences,
 
 those preferences may be persisted separately from projected story meaning.
+
+An annotation is presentation metadata only when it is not intended to alter
+governed story meaning.
+
+A meaning-bearing annotation is a proposal to the appropriate owning semantic
+surface and must not remain hidden inside view metadata.
 
 ## View Freshness
 
@@ -410,6 +429,10 @@ A generated view may be persisted when doing so improves:
 
 Persistence does not change the view's derived status.
 
+Where freshness matters to governed use, a persisted view must retain enough
+source identity, scope, and revision attribution to determine whether the
+projection is still current or must be treated as stale or unresolved.
+
 Where safe regeneration is possible, the Product may prefer rebuilding the view
 from sources rather than migrating or preserving every historical rendering.
 
@@ -432,8 +455,12 @@ create authority confusion.
 
 ## Derived Summaries
 
-Summaries generated from governed state remain derived unless intentionally
-accepted into an owning semantic surface.
+Summaries generated from governed state remain derived unless their content is
+separately proposed and accepted into an owning semantic surface through the
+normal acceptance semantics of that surface.
+
+The summary does not become authoritative merely because it was summarized,
+persisted, or reused.
 
 A summary may omit detail.
 
@@ -546,7 +573,8 @@ An implementation may:
 
 - preserve unknown material opaquely;
 - expose it for inspection;
-- ignore it for operations where doing so is declared safe;
+- ignore it for operations where doing so is established safe for the intended
+  operation;
 - restrict operations;
 - require migration;
 - or refuse governed use.
@@ -817,6 +845,10 @@ when those distinctions become relevant.
 
 Hiding complexity for usability must not erase the underlying distinction.
 
+Before an author performs an action whose meaning materially depends on authority
+class, staleness, unresolved state, or cross-surface impact, the relevant
+distinction must be visible enough to support an informed governed action.
+
 ## Author Override
 
 The author may intentionally choose to proceed despite advisory findings,
@@ -827,6 +859,10 @@ An override does not convert a failed criterion into a passing criterion.
 
 It records or permits an intentional workflow decision where such discretion is
 allowed.
+
+An override cannot make an invalid authority transition valid, reinterpret
+candidate state as accepted, bypass required acceptance semantics, or erase a
+blocking integrity invariant that the architecture requires.
 
 The Product should distinguish author judgment from validator conclusion.
 
@@ -853,8 +889,12 @@ Where source state remains interpretable, the Product should prefer degrading th
 presentation capability rather than treating a view-rendering defect as loss of
 story meaning.
 
-This does not prevent a view from being required for a particular workflow when
-Planning explicitly establishes that requirement.
+This does not prevent a view from being required for a particular workflow
+interaction when Planning explicitly establishes that requirement.
+
+A generated view must not become the sole semantic source for underlying governed
+meaning when the architecture defines that meaning as owned elsewhere and
+portable independently of the view.
 
 ## Extensibility Test
 
