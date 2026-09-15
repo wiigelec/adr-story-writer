@@ -25,11 +25,11 @@ Consequential meaning is authoritative only when it has been intentionally
 accepted at the semantic surface that owns it.
 
 The AI may infer, propose, compare, diagnose, draft, transform, elaborate, or
-realize consequential possibilities. Those possibilities remain non-authoritative
-until accepted at their owning surface.
+realize consequential possibilities. Those possibilities remain
+non-authoritative until accepted at their owning surface.
 
-Production-control artifacts may govern a particular generation task, but they
-do not acquire independent semantic authority over Canon, Plot, Prose, or
+Production-control artifacts may constrain a particular generation task, but
+they do not acquire independent semantic authority over Canon, Plot, Prose, or
 Manuscript.
 
 Persistence preserves state. It does not create authority.
@@ -113,13 +113,15 @@ The Product distinguishes at least:
 
 - **semantic acceptance** — accepts candidate consequential meaning at its
   owning semantic surface;
-- **artifact acceptance** — accepts an artifact whose role is itself governed,
-  such as a production-control artifact;
+- **production approval** — approves a production-control artifact for its
+  defined downstream control role without granting it independent story
+  authority;
 - **manuscript acceptance** — accepts specified reader-facing text;
 - **revision acceptance** — intentionally supersedes previously accepted meaning
   at an identified scope;
-- **coordinated acceptance** — accepts a coherent set of related semantic
-  operations that together represent one author decision;
+- **coordinated acceptance** — records one author decision that intentionally
+  resolves multiple related semantic targets without leaving known partial
+  semantic state;
 - and **persistence authorization** — permits working, candidate, or accepted
   state to be stored.
 
@@ -139,6 +141,10 @@ Where multiple consequential scopes are reasonably possible, the Product must
 not silently choose the broader interpretation.
 
 Unresolved scope remains non-authoritative.
+
+Acceptance may be partial. Selected portions of an artifact may become accepted
+while other portions remain candidate when the accepted scope and its
+dependencies are unambiguous.
 
 Acceptance of a larger artifact does not automatically imply acceptance of
 every embedded consequential proposition when those propositions belong to
@@ -160,31 +166,54 @@ For example:
 Such work is permitted when the non-authoritative assumptions are identifiable.
 
 The Product must preserve enough dependency information to determine which
-candidate assumptions materially constrain a downstream candidate.
+candidate assumptions currently and materially constrain a downstream
+candidate.
 
 Candidate chaining is therefore allowed.
 
 Candidate chaining does not collapse authority boundaries.
 
+## Dependency and Derivation
+
+A candidate's derivation history and its current semantic dependencies are not
+the same thing.
+
+An exploratory assumption may have influenced an earlier draft but cease to
+constrain a later revision.
+
+Acceptance decisions are based on the consequential dependencies of the
+current candidate being accepted, not every proposal, prompt input, or
+historical assumption that contributed to its derivation.
+
+Derivation may still be retained for provenance, diagnosis, or reproducibility,
+but historical influence alone does not create an acceptance dependency.
+
 ## Acceptance Closure
 
 A downstream candidate cannot be accepted in a way that silently promotes
-unresolved consequential upstream assumptions.
+unresolved consequential meaning on which the accepted result currently and
+materially depends.
 
-Before or as part of accepting a downstream result, every consequential
-candidate assumption required for that acceptance must be one of the following:
+Before or as part of accepting a downstream result, each unresolved
+consequential candidate dependency required by the accepted scope must be one
+of the following:
 
 - accepted at its owning semantic surface;
-- revised into an accepted alternative and reconciled downstream;
-- explicitly excluded from the accepted downstream result;
-- or left unresolved, in which case the dependent downstream result remains
-  candidate at the affected scope.
+- revised into an accepted alternative and reconciled in the downstream result;
+- explicitly excluded from the accepted scope;
+- or left unresolved, in which case the dependent portion remains candidate.
 
 This requirement is **acceptance closure**.
 
-Acceptance closure does not require every upstream candidate used during
-exploration to become accepted. It applies only to consequential assumptions
-that the accepted result actually depends on.
+Acceptance closure is evaluated against the current accepted scope and its
+material dependencies. It does not require acceptance of exploratory
+assumptions, historical derivation inputs, deliberately unresolved
+interpretations that the accepted text does not semantically depend on, or
+unrelated candidate material.
+
+Deliberate ambiguity may remain in accepted Manuscript when the text does not
+require the Product to adopt one unresolved consequential interpretation as
+accepted story truth.
 
 ## Downstream Discovery
 
@@ -209,24 +238,28 @@ non-consequential creative allowance, it may remain local realization detail.
 If the detail is consequential, it becomes candidate meaning at the semantic
 surface that owns it.
 
-Generated prose, repeated use, successful validation, or manuscript approval
-must not silently promote that consequential invention.
+Generated prose, repeated use, successful validation, production approval, or
+manuscript acceptance must not silently promote that consequential invention.
 
-If accepted manuscript depends on the invention, acceptance closure applies.
+If an accepted scope materially depends on the invention, acceptance closure
+applies.
 
-## Production-Control Artifact Acceptance
+## Production-Control Approval
 
-Production-control artifacts may themselves require acceptance because they
-constrain downstream generation.
+Production-control artifacts may require author approval because they constrain
+downstream generation.
 
-Acceptance of a production-control artifact means that the author approves it
-for its defined control role.
+Production approval means that the author approves the artifact for its defined
+control role.
 
-It does not create new story truth beyond the semantic meaning already accepted
-or explicitly accepted together with it.
+Production approval does not create new story truth beyond semantic meaning
+already accepted or intentionally accepted together with it.
 
-A production-control artifact that embeds unresolved consequential assumptions
-must identify those assumptions as candidate dependencies.
+A production-control artifact that contains unresolved consequential
+assumptions must identify those assumptions as candidate dependencies.
+
+Approval may be partial when only a clearly identified portion of the
+production-control artifact is ready to govern downstream work.
 
 ## Manuscript Acceptance Boundary
 
@@ -240,32 +273,27 @@ It does not silently:
 - accept consequential invention;
 - or resolve candidate assumptions.
 
-Consequential meaning required by accepted manuscript must satisfy acceptance
-closure before or as part of manuscript acceptance.
+Consequential meaning materially required by accepted Manuscript must satisfy
+acceptance closure before or as part of manuscript acceptance.
 
 A user interface may present this reconciliation as one author action, but the
 underlying semantic operations remain distinct.
 
 ## Coordinated Semantic Change
 
-One author decision may require changes at multiple semantic surfaces or
-multiple governed targets.
+One author decision may intentionally change multiple semantic surfaces or
+governed targets.
 
-When those changes together represent one inseparable author decision, the
-Product must support coordinated acceptance so governed state is not knowingly
-left in a semantically partial result.
+When those changes are inseparable parts of one decision, the Product must not
+knowingly leave accepted state in a partial semantic result.
 
-For example, an author may simultaneously accept:
+For example, an author may decide together to accept a new Canon event, a Plot
+reveal that presents it, and a revised scene control artifact that depends on
+both.
 
-- a new Canon event;
-- a Plot reveal that presents it;
-- and a revised scene control artifact that depends on both.
+The coordinated decision preserves ownership at each semantic surface.
 
-Coordinated acceptance preserves ownership. It does not merge Canon, Plot,
-Prose, Manuscript, or production-control roles.
-
-Planning may realize coordinated acceptance through transactions, staged
-operations, validation gates, or another mechanism.
+Planning may choose how to realize this semantic requirement.
 
 ## Revision of Accepted Meaning
 
@@ -275,32 +303,35 @@ Revision acceptance supersedes prior accepted meaning at the identified scope.
 
 Revision does not silently rewrite dependent accepted artifacts.
 
-Instead, affected dependents become subject to reconciliation.
+Affected dependents become subject to reconciliation according to later Design.
 
 The Product must preserve enough dependency information to identify materially
 affected downstream state.
 
-The precise dependency and reconciliation model is defined by later Design.
+## Candidate Rejection and Withdrawal
+
+A candidate may be rejected, withdrawn, or superseded without altering accepted
+state.
+
+Rejecting or withdrawing a candidate does not retroactively change accepted
+meaning merely because accepted or candidate work was historically derived from
+it.
+
+If current accepted or candidate state materially depends on the rejected or
+withdrawn candidate, that dependency must be reconciled.
 
 ## Reconciliation Principle
 
-Reconciliation determines what must happen to governed downstream state after
-an accepted upstream change or resolution of a candidate assumption.
+An accepted upstream change, resolution of a candidate dependency, or removal of
+a material candidate assumption may require downstream reconciliation.
 
-Reconciliation may conclude that a dependent artifact:
+Reconciliation must preserve authority boundaries and must not invent new
+consequential meaning merely to restore consistency.
 
-- remains valid unchanged;
-- requires regeneration or revision;
-- requires semantic review;
-- must remain candidate until an assumption is resolved;
-- or is no longer applicable.
+When reconciliation cannot preserve author intent without a new consequential
+decision, that decision remains candidate until the author resolves it.
 
-Reconciliation must not invent replacement meaning merely to restore
-consistency.
-
-When automatic reconciliation cannot preserve author intent without making a
-new consequential decision, the Product must surface that decision to the
-author.
+Later Design defines detailed dependency and reconciliation behavior.
 
 ## Acceptance and Persistence
 
@@ -320,27 +351,21 @@ Later Design defines save boundaries, recovery, and durable Dataset behavior.
 ## Failure-Safe Interpretation
 
 When the Product cannot determine whether an operation would broaden authority,
-promote consequential meaning, or resolve a candidate assumption, it must
-preserve the narrower authority interpretation.
+promote consequential meaning, or resolve a candidate assumption, ambiguity
+degrades to candidate state rather than broader acceptance.
 
-The safe fallback is to retain candidate state and surface the unresolved
-decision rather than silently promote meaning.
+The Product preserves the narrower authority interpretation and surfaces the
+unresolved decision.
 
 ## Planning Boundary
 
 This Design defines authority, candidate, acceptance, revision, and
 reconciliation meaning.
 
-Later Design may define:
-
-- detailed dependency representation;
-- reconciliation workflow;
-- acceptance metadata;
-- candidate lifecycle representation;
-- coordinated-operation realization;
-- persistence and save behavior;
-- validation gates;
-- and user-interface presentation.
+Later Design may define detailed dependency and reconciliation behavior,
+acceptance metadata, candidate lifecycle representation, coordinated-operation
+realization, persistence and save behavior, validation gates, and
+user-interface presentation.
 
 Planning may choose schemas, identifiers, status values, transaction
 mechanisms, storage layout, prompts, commands, and other technical realization.
