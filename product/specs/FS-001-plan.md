@@ -12,6 +12,34 @@ design_revision: 3ba9e3f600adf2a5ccae8db8aca00ebbbb9c17c9
 Extend the existing Ruleset from descriptive semantic guidance into a compact
 governed runtime contract for an external story Dataset.
 
+FS-001 implements only the Design obligations selected by the Functional Set
+scope. It does not claim complete implementation of every capability in each
+referenced Design Proposal.
+
+For this vertical slice, Planning carries forward:
+
+- DP-100/110 authority boundaries, bounded control flow, candidate state,
+  intentional acceptance, acceptance closure, and persistence separation;
+- DP-120 refinement sufficiency, lowest-layer navigation, active-task material
+  dependencies, and candidate-dependency reconciliation;
+- DP-130/140 viewpoint, reader-information, accepted Canon truth, knowledge, and
+  temporal/event constraints required by the bounded prose task;
+- DP-150 production contracts, generation packages, minimum-sufficient context,
+  information-access safety, creative allowance, protected material, stable
+  provenance, bounded candidate generation, and local correction;
+- DP-160 authority-preserving persistence, candidate/production continuity,
+  coherent authorized saves, provenance continuity, and fresh-session
+  reconstruction;
+- DP-175 durable identity/revision/dependency targeting and generation
+  attribution required by this slice; and
+- DP-180 mechanical/semantic review separation, indeterminate handling,
+  generated-prose review, consequential-invention review, and acceptance gates.
+
+General upstream revision-impact analysis, concurrency/recovery machinery,
+comprehensive Canon/Plot epistemic and temporal modeling, the full DP-175
+artifact lifecycle and Manuscript mapping model, migration/rebinding, and
+generated-view/extensibility systems are deferred beyond FS-001.
+
 ## Runtime Structure
 
 Preserve the existing Canon, Plot, Prose, Manuscript, Workflow, Authority, and
