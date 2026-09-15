@@ -94,17 +94,11 @@ rather than relying on an incidental metadata field.
 
 ## Metadata Authority
 
-Metadata may itself be authoritative for its own operational or descriptive
-purpose without becoming story-semantic authority.
+Metadata may be authoritative for its own operational or descriptive purpose
+without becoming story-semantic authority.
 
-For example, a story title may be authoritative as the current project title
-without becoming Canon.
-
-Likewise, a workflow label may be authoritative for scheduling or UI behavior
-without becoming Plot or Manuscript meaning.
-
-The Product must preserve the distinction between metadata authority and story
-semantic authority.
+A project title or workflow label may therefore govern its own descriptive or
+operational use without becoming Canon, Plot, Prose, or Manuscript meaning.
 
 ## Story Status
 
@@ -290,22 +284,12 @@ single "who knows what" authority.
 
 ## Review and Reconciliation Views
 
-Validation, semantic-review, and reconciliation reports are derived views.
+Validation, semantic-review, and reconciliation reports are derived views and
+workflow evidence, not story truth or acceptance authority.
 
-They may summarize:
-
-- affected scopes;
-- review outcomes;
-- stale dependencies;
-- contradictions;
-- unresolved questions;
-- blocking findings;
-- candidate assumptions;
-- or recommended next actions.
-
-They remain evidence and workflow aids.
-
-They do not become story truth or acceptance authority.
+They may summarize affected scopes, review outcomes, stale dependencies,
+contradictions, unresolved questions, blocking findings, candidate assumptions,
+or recommended next actions.
 
 ## Editing Generated Views
 
@@ -455,24 +439,11 @@ create authority confusion.
 
 ## Derived Summaries
 
-Summaries generated from governed state remain derived unless their content is
-separately proposed and accepted into an owning semantic surface through the
-normal acceptance semantics of that surface.
+A generated summary remains derived unless its content is separately proposed
+and accepted at an owning semantic surface.
 
-The summary does not become authoritative merely because it was summarized,
-persisted, or reused.
-
-A summary may omit detail.
-
-Omission does not delete source meaning.
-
-A summary may paraphrase source meaning.
-
-Paraphrase does not replace the source.
-
-A summary may combine multiple sources.
-
-Combination does not create new semantic ownership.
+Omission, paraphrase, combination, persistence, or reuse does not delete, replace,
+combine ownership of, or otherwise supersede the governed sources.
 
 ## Diagnostic Inference
 
@@ -586,19 +557,9 @@ Compatibility behavior follows DP-170.
 
 ## Extensions and Authority
 
-An extension may define:
-
-- a new view;
-- new metadata;
-- a new validator;
-- a new export;
-- a new production-control representation;
-- or another capability.
-
-None of those additions changes Canon, Plot, Prose, or Manuscript ownership
-unless Product Design explicitly says so.
-
-The default extension rule is preservation of existing authority boundaries.
+New views, metadata, validators, exports, production-control representations, and
+other capabilities preserve existing authority boundaries unless Product Design
+explicitly establishes a different semantic role.
 
 ## Avoiding Accidental Schema Authority
 
@@ -625,83 +586,37 @@ performance, author usability, migration, or validation.
 
 Storage layout must not silently redefine semantic ownership.
 
-## Avoiding Excessive Identity
+## Avoiding Excessive Governance
 
-Stable identity is required where durable targeting, dependency, provenance,
-migration, reconciliation, or cross-session reference materially requires it.
+Governance machinery should be introduced only where it materially improves
+Product behavior.
 
-The Product does not require governed identity for every:
+In particular:
 
-- sentence;
-- word;
-- adjective;
-- incidental detail;
-- temporary prompt;
-- conversational utterance;
-- transient search result;
-- or ephemeral intermediate.
+- identity is required where durable targeting, dependency, provenance,
+  migration, reconciliation, or cross-session reference needs it, not for every
+  sentence, word, incidental detail, prompt, utterance, search result, or
+  ephemeral intermediate;
+- provenance should be only as detailed as needed for continuity, author control,
+  acceptance, reconciliation, local regeneration, review, migration, or
+  diagnosis rather than tracing every prompt, model token, search result, or
+  intermediate;
+- status distinctions are justified when they change author understanding,
+  allowed operations, validation, acceptance, persistence, migration, or another
+  material workflow outcome;
+- no universal registry of every artifact, identity, relationship, view, status,
+  validation result, and workflow object is required; registries, manifests, and
+  indexes may be introduced for concrete needs but must not become shadow
+  semantic authority; and
+- visible transactions, proof objects, confirmation objects, startup receipts,
+  operation journals, mode banners, or multi-step approval ceremony are not
+  required for ordinary actions unless they materially improve safety,
+  recoverability, or author confidence.
 
-Identity granularity follows DP-175 and demonstrated control value.
+Identity granularity follows DP-175.
 
-## Avoiding Excessive Provenance
-
-The Product does not require generalized lineage linking every Manuscript phrase
-through every prompt, model token, search result, and intermediate artifact.
-
-Traceability should be as light as possible while still supporting:
-
-- continuity;
-- author control;
-- acceptance;
-- reconciliation;
-- local regeneration;
-- review;
-- migration;
-- and diagnosis.
-
-More provenance is not inherently more correct.
-
-## Avoiding Excessive Status Taxonomy
-
-The Product should not create large status taxonomies merely to classify every
-intermediate condition.
-
-Status distinctions are justified when they change:
-
-- author understanding;
-- allowed operations;
-- validation behavior;
-- acceptance;
-- persistence;
-- migration;
-- or another material workflow outcome.
-
-Where no behavior depends on a distinction, additional status vocabulary adds
-governance burden without Product value.
-
-## Avoiding Excessive Registries
-
-The Product does not require one universal registry containing every artifact,
-identity, relationship, view, status, validation result, and workflow object.
-
-Registries, manifests, or indexes may be introduced where they solve a concrete
-problem.
-
-They must not become shadow semantic authority merely because other tooling reads
-them.
-
-## Avoiding Excessive Workflow Ceremony
-
-The Product exists to reduce AI drift and preserve author control.
-
-It does not require visible transactions, proof objects, confirmation objects,
-startup receipts, operation journals, mode banners, or multi-step approval
-ceremony for every ordinary action.
-
-Such mechanisms may be justified when they materially improve safety,
-recoverability, or author confidence.
-
-They are not Product goals in themselves.
+More identity, provenance, status vocabulary, registry structure, or workflow
+ceremony is not inherently more correct.
 
 ## Avoiding False Precision
 
