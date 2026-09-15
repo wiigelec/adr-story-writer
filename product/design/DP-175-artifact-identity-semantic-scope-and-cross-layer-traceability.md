@@ -536,41 +536,24 @@ review and regeneration where material.
 
 Revision impact under DP-120 follows material dependencies and affected scopes.
 
-Traceability should make it possible to start from a changed scope and identify
-likely downstream regions requiring review or reconciliation.
-
-Traceability does not decide the semantic outcome of reconciliation.
-
-It identifies relationships and affected regions.
-
+Traceability should identify likely downstream regions requiring review or
+reconciliation from a changed scope, but it does not decide the semantic outcome.
 The author or governed semantic process decides what changes.
 
 ## Traceability and Migration
 
 Migration under DP-170 should preserve identity and materially required
-traceability when the same governed meaning continues across realizations.
+traceability when governed meaning continues across realizations.
 
-If a migration changes identifiers, it must preserve enough mapping to relate
-source identities to target identities for as long as that relationship remains
-material.
-
-Migration mappings are provenance.
-
-They do not create new semantic authority.
+If identifiers change, enough mapping must remain to relate source and target
+identities while that relationship is material. Migration mappings are
+provenance, not semantic authority.
 
 ## Historical Identity
 
-Historical identity may remain useful after an object is superseded, retired,
-migrated, or revised.
-
-The Product may retain historical identity references for:
-
-- provenance;
-- diagnosis;
-- migration;
-- comparison;
-- reconciliation;
-- or author navigation.
+Historical identity may remain useful after supersession, retirement, migration,
+or revision for provenance, diagnosis, comparison, reconciliation, migration, or
+author navigation.
 
 Historical identity must not be mistaken for current authority.
 
@@ -605,29 +588,21 @@ Identity repair must not invent semantic equivalence merely to satisfy a schema.
 
 ## Imported Material
 
-Imported source material does not become governed story authority merely because
-the Product assigns it an identity.
-
-Identity enables targeting.
+Assigning identity to imported source material, notes, references, templates, or
+generated views enables targeting but does not grant story authority.
 
 Authority remains determined by the material's governed role and acceptance
 state.
 
-This distinction also applies to imported notes, source references, templates,
-or generated views.
-
 ## Derived Views
 
 Generated dossiers, reports, indexes, summaries, and other derived views may
-have stable identity for persistence, caching, user targeting, or refresh.
+have stable identity for persistence, caching, targeting, or refresh without
+gaining semantic authority.
 
-Their identity does not grant them semantic authority.
-
-Where a derived view projects governed sources, traceability should permit the
-Product to identify those sources when needed for refresh or safe editing.
-
-Edits intended to change story meaning must map back to the appropriate owning
-semantic surface rather than treating the derived view as a competing authority.
+Traceability should identify their governed sources when needed for refresh or
+safe editing, and meaning-changing edits must map back to the appropriate owning
+semantic surface.
 
 ## Traceability Completeness
 
@@ -662,34 +637,18 @@ The Product must be able to distinguish, as needed, between:
 
 The exact status vocabulary is a Planning decision.
 
-## Traceability Is Not Authority
+## Traceability, Authority, and Acceptance Closure
 
-Identity and traceability describe what an object is and how governed scopes
-relate.
+Identity and traceability describe what objects are and how governed scopes
+relate; they do not create semantic authority or acceptance.
 
-They do not create semantic authority.
+A relationship to accepted Canon does not accept candidate Plot, generation
+attribution does not accept Manuscript, and a Manuscript passage tracing to
+candidate Canon does not accept that Canon.
 
-A relationship to accepted Canon does not automatically make a candidate Plot
-accepted.
-
-A generated candidate attributable to an approved production contract does not
-become accepted Manuscript.
-
-A Manuscript passage tracing to candidate Canon does not accept that Canon.
-
-Authority continues to follow DP-110 and the owning semantic surface.
-
-## Traceability Is Not Acceptance Closure
-
-Traceability may reveal dependencies relevant to acceptance closure.
-
-It does not itself decide whether every traced historical influence must be
-accepted.
-
-DP-110 governs acceptance closure based on current material dependency.
-
-Historical derivation may be retained without becoming a current acceptance
-dependency.
+Traceability may reveal dependencies relevant to DP-110 acceptance closure, but
+DP-110 determines closure from current material dependency. Historical derivation
+may remain traceable without becoming a current acceptance dependency.
 
 ## Traceability Boundary
 
