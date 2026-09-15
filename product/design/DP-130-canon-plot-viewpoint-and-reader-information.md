@@ -45,40 +45,24 @@ Canon may therefore be materially richer than Plot and Manuscript.
 Candidate Canon proposals may be used under DP-110 and DP-120 without becoming
 accepted truth.
 
-## Canon Scope
+## Canon Boundary-Critical Scope
 
-Canon may include:
+For the Canon/Plot boundary, Canon must be able to represent at least:
 
-- entities and identity;
-- physical and environmental facts;
-- relationships;
 - chronology and occurrence;
+- relationships and state;
 - causality and consequence;
-- current and historical state;
 - accepted future occurrence;
-- capabilities and limitations;
-- motives, intentions, values, fears, and other story-relevant mental state;
 - character or group knowledge, belief, misunderstanding, and memory;
 - hidden causes and unrevealed truth;
-- social, institutional, cultural, technological, natural, supernatural, or
-  other world rules;
-- and other accepted meaning required for coherent story reasoning.
+- and intentionally unresolved story truth.
 
-This list describes semantic scope, not required physical storage categories.
+Detailed Canon domains, state, events, and temporal semantics are defined by
+later Design.
 
-## Canon Domains
-
-Character, Setting, Events, relationships, chronology, knowledge, and other
-useful categories are semantic domains or views of Canon.
-
-They do not become competing authorities merely because the Product presents
-them separately.
-
-One accepted truth may participate in several author-facing views without being
-duplicated as several independently editable truths.
-
-Where several views expose the same underlying meaning, edits must resolve to
-the semantic Canon target that owns that meaning.
+Author-facing Canon views may organize the same underlying truth in different
+ways, but presentation through several views must not create competing
+authorities.
 
 ## Objective Truth, Knowledge, and Belief
 
@@ -161,8 +145,11 @@ Plot may:
 Plot order must therefore not be treated as the sole representation of Canon
 chronology.
 
-Likewise, authoring order is not story chronology and is not necessarily Plot
-order.
+Likewise, authoring order is neither story chronology nor authority order and
+is not necessarily Plot order.
+
+Material authored or accepted later may describe earlier Canon occurrence, and
+accepted future Canon may exist before any Plot unit realizes it.
 
 ## Viewpoint Ownership
 
@@ -172,9 +159,13 @@ Plot owns the **information-access decision**:
 
 - whose perspective governs access;
 - what that perspective can perceive or know;
-- what information is available or unavailable in the narrative unit;
-- whether access shifts;
+- what information is available or unavailable within the governed scope;
+- whether access shifts within or between narrative units;
 - and what dramatic restrictions follow from that choice.
+
+Viewpoint access may be governed at whatever narrative scope is semantically
+useful. Product Design does not require one fixed scene-, chapter-, or
+character-level granularity.
 
 Prose owns the **linguistic realization** of that viewpoint:
 
@@ -216,8 +207,12 @@ Detailed context-projection rules are defined by later Design.
 
 ## Reader-Information Intent
 
-Plot owns governed author intent about what the reader should be presented,
-withheld, reminded of, invited to suspect, or positioned to reinterpret.
+Plot owns governed author intent about what information the narrative should
+present, withhold, emphasize, suggest, or position for later reinterpretation.
+
+Reader-information intent governs intended presentation conditions and effects.
+It does not guarantee what any actual reader will notice, infer, believe,
+remember, or understand.
 
 The Product distinguishes:
 
@@ -276,7 +271,7 @@ Plot may intentionally:
 - repeat or reinforce it;
 - or later recontextualize earlier material.
 
-A generated sentence must not independently decide a consequential reveal that
+Generated text must not independently introduce a consequential reveal that
 Plot has not authorized.
 
 Similarly, generation must not disclose hidden Canon merely because the model
@@ -344,10 +339,12 @@ Canon or alternative consequences of a candidate Canon proposal.
 
 Candidate assumptions must remain declared according to DP-120.
 
-Accepting Plot does not silently accept unresolved candidate Canon on which the
-accepted Plot materially depends.
+Accepted Plot may retain unresolved Canon only when the accepted Plot scope does
+not materially depend on choosing one unresolved Canon interpretation as true.
 
-DP-110 acceptance closure applies.
+Where accepted Plot materially depends on candidate Canon, that dependency must
+satisfy DP-110 acceptance closure. Accepting Plot never silently accepts the
+candidate Canon.
 
 ## Downstream Discovery
 
@@ -366,40 +363,17 @@ Downstream appearance does not grant upstream authority.
 The lowest-layer revision principle in DP-100 applies: upstream meaning changes
 only when the downstream problem cannot be solved while preserving it.
 
-## Generated Views
-
-Character dossiers, setting summaries, event timelines, knowledge views,
-reveal maps, continuity reports, and similar author-facing projections may
-combine Canon and Plot information for convenience.
-
-Such views remain projections unless later Design explicitly assigns them an
-authority role.
-
-A generated view must not erase the distinction between:
-
-- objective Canon;
-- epistemic Canon;
-- Plot presentation;
-- and reader-information intent.
-
-Edits through a combined view must resolve to the semantic surface that owns
-the changed meaning.
-
 ## Validation Relationship
 
-Validation or semantic review may evaluate whether:
-
-- Plot contradicts accepted Canon;
-- viewpoint exposes information outside accepted access;
-- character behavior assumes knowledge the character does not possess;
-- reader information is revealed earlier or later than intended;
-- hidden Canon leaks into generated text;
-- Plot order is confused with chronology;
-- or realized text materially fails the accepted reveal/concealment intent.
+Semantic review must be able to detect material violations of this boundary,
+including Canon contradiction, epistemic leakage, unauthorized reveal,
+viewpoint-access violation, and confusion between chronology and Plot order.
 
 Validation diagnoses alignment.
 
 It does not create Canon, choose Plot, or establish actual reader knowledge.
+
+Detailed validation behavior is defined by later Design.
 
 ## Revision and Reconciliation
 
