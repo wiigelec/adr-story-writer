@@ -15,8 +15,8 @@ Its primary purpose is to let an author use generative AI across many sessions
 without trusting the model to remember the story, reconstruct prior decisions,
 or independently plan consequential long-form narrative meaning.
 
-The Product therefore externalizes author-approved story state, progressively
-reduces broad writing intent into bounded generation work, and validates
+The Product externalizes author-approved story state, progressively reduces
+broad writing intent into reliably bounded generation work, and evaluates
 generated results before they may become accepted story state or manuscript.
 
 The Product is not autonomous authorship. The AI may propose, analyze, plan,
@@ -27,16 +27,16 @@ with the author.
 
 Long-form generative writing creates two related control problems.
 
-First, model context is temporary and incomplete. A conversation cannot be
-treated as durable story memory. Important facts, decisions, dependencies,
-character knowledge, reveal boundaries, style constraints, and prior accepted
-text must survive across sessions independently of chat history.
+First, model context is temporary and incomplete. Conversation cannot be
+treated as durable story memory. Facts, decisions, dependencies, character
+knowledge, reveal boundaries, style constraints, and accepted text must survive
+across sessions independently of chat history.
 
 Second, unconstrained generation requires the model to make too many decisions
 at once. When asked to move directly from broad story intent to finished prose,
-the model is likely to invent consequential details, alter intended events,
-violate viewpoint or reveal constraints, drift stylistically, or continue
-beyond the requested narrative unit.
+the model may invent consequential details, alter intended events, violate
+viewpoint or reveal constraints, drift stylistically, or continue beyond the
+requested narrative unit.
 
 The Product addresses these problems through durable governed state and
 progressive top-down constraint.
@@ -49,31 +49,41 @@ The following invariants govern the Product:
    A fresh session must be able to reconstruct the governed state needed to
    continue work without relying on prior chat history or private model memory.
 
-2. **Consequential story meaning must have an authoritative home outside
+2. **Consequential story meaning has an authoritative semantic home outside
    generated prose.**
-   Generated language may realize accepted or candidate meaning, but prose
-   generation must not silently become the source of consequential truth.
+   Generated language may realize accepted or candidate meaning, but generation
+   must not silently become the source of consequential truth.
 
-3. **Generation is bounded before it begins.**
-   The model must be given a sufficiently constrained local task so that it is
-   primarily deciding how to express already-established intent rather than
-   deciding what consequentially happens next.
+3. **Generation is reliably bounded before it begins.**
+   A generation task must be constrained enough that the model is primarily
+   deciding how to realize established intent rather than independently deciding
+   consequential narrative meaning.
 
 4. **Creative freedom is explicit rather than assumed.**
-   A generation task may define details the model may invent and details or
-   meanings it must not invent.
+   Generation may define details the model may invent and details or meanings it
+   must not invent.
 
 5. **Generated output is candidate output until accepted.**
    Generation does not imply semantic acceptance, manuscript acceptance, or
    persistence as accepted state.
 
-6. **Validation and semantic review precede acceptance where failure would
-   alter governed meaning.**
+6. **Accepting prose does not silently accept consequential invention.**
+   If generated prose contains consequential meaning that is not already
+   governed by the semantic surface that owns it, that meaning must be
+   separately proposed and reconciled before it can become accepted story state.
+
+7. **Validation and semantic review precede acceptance where failure would alter
+   governed meaning.**
    Mechanical correctness and semantic suitability remain distinct.
 
-7. **Meaning-changing revision propagates deliberately.**
+8. **Meaning-changing revision propagates deliberately.**
    Revision may move upstream when necessary, but downstream artifacts must not
    silently rewrite their authorities.
+
+9. **Generated work is attributable to its governing context.**
+   The Product must preserve enough provenance to determine which governed
+   inputs, candidate inputs, boundaries, and constraints formed the context for
+   a generated candidate.
 
 ## Story Semantic Architecture
 
@@ -116,11 +126,11 @@ whether that occurrence is true.
 Prose includes the preparation and expression needed to turn a bounded
 narrative unit into reader-facing language.
 
-The Product may use intermediate Prose control artifacts such as beats,
-narrative modes, paragraph-scale movement, pseudo-prose, transition intent,
-rhythm guidance, or other near-prose structures. These structures exist to
-reduce generation freedom and preserve intended meaning; they do not become
-independent story truth merely because they are detailed.
+The Product may use intermediate Prose control structures such as beats,
+narrative modes, movement, pseudo-prose, transition intent, rhythm guidance, or
+other near-prose structures. These structures reduce generation freedom and
+preserve intended meaning; they do not become independent story truth merely
+because they are detailed.
 
 Prose may introduce non-consequential realization detail within an explicit
 creative allowance. Consequential invention must be proposed or reconciled at
@@ -133,8 +143,9 @@ the semantic surface that owns it.
 Manuscript text is not authoritative merely because it was generated.
 Acceptance establishes that a prose candidate is satisfactory as manuscript.
 
-Accepted manuscript may expose inconsistencies or motivate upstream revision,
-but it does not silently redefine Canon or Plot.
+Manuscript acceptance and semantic acceptance are distinct. Accepted manuscript
+may expose inconsistencies or motivate upstream revision, but it does not
+silently redefine Canon or Plot or silently promote consequential invention.
 
 ## Semantic Direction
 
@@ -152,6 +163,23 @@ The arrows mean dependency and realization, not mandatory storage shape.
 
 Work may move backward for diagnosis or intentional revision. Backward movement
 must be explicit when it changes accepted upstream meaning.
+
+## Production-Control Architecture
+
+The Product may use **production-control artifacts** to constrain, project, and
+coordinate AI work.
+
+Examples include scene contracts, beats, mode assignments, pseudo-prose
+layouts, resolved style projections, continuity reports, generation packages,
+and similar task-specific structures.
+
+Production-control artifacts may be normative for a particular downstream
+generation task, but they are not additional sources of story truth. Their
+authority derives from the governed semantic state and author-approved candidate
+intent they project.
+
+A production-control artifact must not silently compete with Canon, Plot,
+Prose, or Manuscript for ownership of consequential meaning.
 
 ## AI Control Architecture
 
@@ -180,8 +208,8 @@ stored outside conversation.
 
 ### Retrieve
 
-The Product reconstructs the relevant current state for the task from the
-Dataset and applicable Ruleset rather than relying on conversational memory.
+The Product reconstructs relevant current state for the task from the Dataset
+and applicable Ruleset rather than relying on conversational memory.
 
 ### Refine
 
@@ -193,21 +221,23 @@ stages.
 
 The Product may employ structures such as synopsis, outline, sequence, scene
 contract, beats, modes, and pseudo-prose where they improve control. The exact
-artifact vocabulary may evolve, but the requirement to bound generation before
-final prose is architectural.
+artifact vocabulary may evolve; the architectural requirement is that final
+generation be bounded enough that the model need not independently plan
+consequential narrative meaning.
 
-For prose generation, refinement must be capable of reaching approximately
-paragraph-scale or similarly local narrative-intent units when broader
-generation would leave the model excessive planning freedom.
+The required generation granularity is determined by reliability, not by a
+fixed textual size. If a scene is too broad for reliable realization, it must
+be refined into smaller units. If necessary, refinement may reach
+paragraph-scale, sentence-scale, or another local narrative-intent unit.
 
 ### Package
 
 Before generation, the Product constructs a bounded generation package for the
 specific requested unit.
 
-The package projects only the authoritative and candidate information needed
-for that task and records enough provenance to determine what governed inputs
-the generation was based on.
+The package is a reproducible context projection: it identifies the governed
+and candidate inputs, boundaries, permissions, prohibitions, and applicable
+guidance used to produce the candidate.
 
 A generation package must be capable of expressing:
 
@@ -222,7 +252,12 @@ A generation package must be capable of expressing:
 - details or consequential meanings the model must not invent;
 - and validation expectations for the generated result.
 
-The package is a context projection, not a new authority surface.
+The package may include accepted and explicitly selected candidate inputs.
+Candidate use must be identifiable so later acceptance or revision can be
+reconciled deliberately.
+
+The package is a production-control artifact, not a new semantic authority
+surface.
 
 ### Generate
 
@@ -245,12 +280,16 @@ Mechanical validation does not establish semantic acceptance.
 
 ### Accept
 
-The author accepts, rejects, or revises the candidate at the appropriate
-semantic scope.
+The author accepts, rejects, or revises the candidate at the appropriate scope.
 
-Acceptance may accept manuscript text, accept a planning artifact, or accept a
-proposed consequential story change. These are distinct operations even when a
-user interface combines them into a simple interaction.
+Acceptance may apply to manuscript text, candidate planning or control
+artifacts, or proposed consequential story changes. These are distinct semantic
+operations even when a user interface combines them into a simple interaction.
+
+If accepted manuscript contains consequential meaning not already accepted at
+its owning semantic surface, the Product must surface that meaning for explicit
+reconciliation rather than treating manuscript acceptance as implicit Canon or
+Plot acceptance.
 
 ## Runtime Architecture
 
@@ -269,40 +308,37 @@ operationally useful but is not, by itself, durable story authority.
 A new session with the same applicable Ruleset and Dataset must be able to
 resume governed work without access to the prior conversation.
 
-## State Distinctions
+## State and Persistence Principles
 
-The Product distinguishes at least:
+The Product distinguishes conversational material, working material, persisted
+candidate material, accepted semantic state, and accepted manuscript state.
 
-- conversational material;
-- transient working material;
-- persisted candidate material;
-- accepted governed semantic state;
-- accepted manuscript state;
-- and persisted representations of those states.
-
-These distinctions may share storage mechanisms or user-interface surfaces,
-but they are not semantically interchangeable.
-
-Persistence does not imply acceptance.
-
-Acceptance does not require that every intermediate artifact become permanent.
+Persistence and acceptance are independent. Persisted candidates may support
+multi-session work without becoming accepted truth or accepted manuscript.
 
 Generated content does not acquire authority merely because it was saved.
 
+Later Design defines detailed candidate dependency, acceptance, save, and
+reconciliation semantics.
+
 ## Context Projection Principle
 
-The Product must not solve context limits by repeatedly loading the entire
-story into the model.
+Generation must not depend on whole-story context being loaded into the model.
 
-Instead, it constructs task-specific context from durable governed state.
+The Product constructs task-specific context from durable governed state and
+explicitly selected candidate state.
 
 A context projection should be small enough for reliable local reasoning while
 remaining complete enough that the model does not need to guess consequential
 missing information.
 
-Where completeness and boundedness conflict, the Product must refine the task
-further, retrieve additional dependencies deliberately, or surface the
-ambiguity to the author rather than silently permitting invention.
+Loading broader story context is permitted when useful, but correctness must
+not depend on a model remembering or inferring unstated consequential state from
+that broader context.
+
+Where completeness and boundedness conflict, the Product must refine the task,
+retrieve additional dependencies deliberately, or surface the ambiguity to the
+author rather than silently permitting invention.
 
 ## Lowest-Layer Revision Principle
 
@@ -315,21 +351,20 @@ unchanged.
 If Plot cannot solve the problem without changing Canon, the proposed change is
 explicitly escalated to Canon.
 
-The same principle applies to control artifacts: changing a local realization
-plan should not rewrite broader accepted intent unless the local problem
-actually requires that change.
+Changing a local production-control artifact must not rewrite broader accepted
+intent unless the local problem actually requires that change.
 
 ## Generated Views
 
-The Product may generate dossiers, summaries, reports, indexes, context
-packages, continuity views, or other projections for authors or agents.
+The Product may generate dossiers, summaries, reports, indexes, continuity
+views, context projections, or other views for authors or agents.
 
-Generated views are non-authoritative unless Design explicitly assigns them an
-authority role.
+Generated views are non-authoritative unless later Design explicitly assigns
+them an authority role.
 
-An edit made through a generated view must resolve to a semantic operation on
-the underlying governed state rather than silently creating a competing source
-of truth.
+An edit made through a generated view must resolve to an operation on the
+underlying governed state or candidate state rather than silently creating a
+competing source of truth.
 
 ## Long-Form Success Criteria
 
@@ -339,26 +374,28 @@ The architecture is successful only if it supports all of the following:
 - accepted facts and character state remain stable across distant scenes;
 - viewpoint and character-knowledge limits can be preserved;
 - planned reveal timing can remain stable across long spans;
-- prose generation can stop at the requested local boundary;
+- generation can stop at the requested local boundary;
 - the model can be creative inside explicit allowances without being free to
   invent consequential meaning;
 - a local prose unit can be regenerated without re-planning the whole story;
 - style and voice guidance can remain stable yet locally resolved;
 - revisions can be traced to the story meaning they depend on;
-- and generated output can be checked against the context and constraints that
-  produced it.
+- generated candidates can be traced to the context and constraints that
+  produced them;
+- and persisted candidate work can survive session boundaries without being
+  mistaken for accepted state.
 
 ## Simplicity Boundary
 
 Governance exists to improve author control and model reliability.
 
-The Product should therefore expose author-meaningful decisions while hiding
-mechanical bookkeeping wherever possible.
+The Product should expose author-meaningful decisions while hiding mechanical
+bookkeeping wherever possible.
 
 The architecture does not require giant registries, visible transaction
 ceremonies, hashes on every artifact, numerous user-facing status labels, or
-other governance machinery unless a later Design decision demonstrates that
-such machinery is necessary to preserve the required semantics or reliability.
+other governance machinery unless later Design demonstrates that such machinery
+is necessary to preserve required semantics or reliability.
 
 Internal rigor is permitted. Accidental author-facing bureaucracy is not a
 Product goal.
@@ -368,8 +405,8 @@ Product goal.
 This Design establishes Product meaning and architectural invariants.
 
 Later Design may define specific authority, acceptance, Canon, Plot, Prose,
-generation-package, persistence, identity, reconciliation, validation, and
-compatibility semantics.
+production-control, generation-package, persistence, identity, reconciliation,
+validation, and compatibility semantics.
 
 Planning may choose schemas, identifiers, file layouts, workflow commands,
 retrieval mechanisms, status representations, validation implementations,
