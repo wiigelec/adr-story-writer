@@ -44,7 +44,8 @@ acceptance closure.
 ## Acceptance
 
 Represent semantic acceptance, production approval, Manuscript acceptance,
-revision acceptance, and persistence authorization distinctly.
+revision acceptance, coordinated acceptance, and persistence authorization
+distinctly.
 
 Acceptance targets an identifiable scope. Material unresolved candidate
 dependencies block acceptance of the dependent scope unless accepted,

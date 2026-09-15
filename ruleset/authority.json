@@ -11,6 +11,7 @@
     "production_approval",
     "manuscript_acceptance",
     "revision_acceptance",
+    "coordinated_acceptance",
     "persistence_authorization"
   ]
 }

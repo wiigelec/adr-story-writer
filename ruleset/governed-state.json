@@ -48,10 +48,12 @@
       "production_approval",
       "manuscript_acceptance",
       "revision_acceptance",
+      "coordinated_acceptance",
       "persistence_authorization"
     ],
     "identifiable_scope_required": true,
     "closure_required": true,
+    "coordinated_acceptance_requires_explicit_related_scopes": true,
     "closure_resolutions": [
       "accept_dependency",
       "reconcile_to_accepted",

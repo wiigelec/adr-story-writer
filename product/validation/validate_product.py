@@ -119,7 +119,8 @@ def task_authority_operations() -> bool:
     data = load_json("ruleset/authority.json")
     required = {
         "semantic_acceptance", "production_approval", "manuscript_acceptance",
-        "revision_acceptance", "persistence_authorization",
+        "revision_acceptance", "coordinated_acceptance",
+        "persistence_authorization",
     }
     return (
         check(required == set(data.get("acceptance_operations", [])), "authority: acceptance operations incomplete")

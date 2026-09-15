@@ -80,7 +80,7 @@ Consequential meaning introduced downstream without governing authority shall re
 
 ### FS-001-NR-017 — Explicit Acceptance Operations
 **Classification: B**
-Semantic acceptance, production approval, Manuscript acceptance, revision acceptance, and persistence authorization shall remain distinct operations applied to identifiable scopes.
+Semantic acceptance, production approval, Manuscript acceptance, revision acceptance, coordinated acceptance, and persistence authorization shall remain distinct operations applied to identifiable scopes.
 
 ### FS-001-NR-018 — Acceptance Closure
 **Classification: B**
