@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "outcomes": [
+    "conforming",
+    "non_conforming",
+    "indeterminate"
+  ],
+  "indeterminate_when": [
+    "governing_context_missing",
+    "governing_context_stale",
+    "governing_context_ambiguous"
+  ],
+  "review_dimensions": [
+    "generation_boundary",
+    "required_movement",
+    "canon_consistency",
+    "plot_fidelity",
+    "viewpoint_access",
+    "reveal_concealment",
+    "prose_guidance",
+    "protected_material",
+    "creative_allowance",
+    "consequential_invention",
+    "local_continuity"
+  ],
+  "consequential_invention": {
+    "becomes_candidate_at_owning_surface": true,
+    "never_silently_promoted": true,
+    "author_resolutions": [
+      "reject",
+      "revise_downstream",
+      "review_upstream_proposal"
+    ]
+  },
+  "acceptance_gate": {
+    "requires_applicable_review": true,
+    "requires_acceptance_closure": true,
+    "validation_does_not_create_authority": true
+  }
+}

@@ -19,9 +19,16 @@
     "pseudo_prose",
     "final_prose"
   ],
+  "production_control": {
+    "production_contract": "Defined by ruleset/production.json.",
+    "generation_package": "Defined by ruleset/production.json.",
+    "generated_output_authority": "candidate_manuscript"
+  },
   "rules": [
     "Final prose is manuscript output, not a fourth governed Prose workflow component.",
     "Prose may add non-consequential sensory and expressive detail necessary for readable fiction.",
-    "Prose must not silently introduce consequential Canon facts, resolve unapproved Plot choices, or contradict accepted upstream artifacts."
+    "Prose must not silently introduce consequential Canon facts, resolve unapproved Plot choices, or contradict accepted upstream artifacts.",
+    "Generation requires an explicit stopping boundary and a bounded governing package.",
+    "Generated prose remains candidate until an author-governed Manuscript acceptance operation."
   ]
 }

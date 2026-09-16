@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "production_contract": {
+    "capabilities": [
+      "target_scope",
+      "stop_boundary",
+      "narrative_movement",
+      "local_realization_units",
+      "viewpoint_access",
+      "reveal_concealment",
+      "entry_exit_conditions",
+      "prose_guidance",
+      "style_voice",
+      "protected_material",
+      "creative_allowance",
+      "prohibited_consequential_invention",
+      "accepted_dependencies",
+      "candidate_dependencies"
+    ],
+    "must_be_bounded_before_generation": true
+  },
+  "generation_package": {
+    "required_fields": [
+      "id",
+      "contract_id",
+      "target_scope",
+      "stop_boundary",
+      "selected_revisions",
+      "creative_allowance",
+      "prohibited_invention",
+      "provenance"
+    ],
+    "minimum_sufficient_context": true,
+    "stable_after_use": true,
+    "candidate_inputs_remain_candidate": true,
+    "overflow_remains_candidate": true
+  },
+  "information_access": {
+    "supports_generator_visible_context": true,
+    "supports_reviewer_only_constraints": true,
+    "hidden_canon_does_not_authorize_disclosure": true
+  },
+  "generation": {
+    "output_authority_class": "candidate_manuscript",
+    "does_not_imply_acceptance": true,
+    "does_not_imply_persistence_authorization": true
+  }
+}
