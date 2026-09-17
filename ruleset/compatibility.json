@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "dataset_schema": {
+    "identity_fields": [
+      "schema.id",
+      "schema.version"
+    ],
+    "current": {
+      "id": "adr-story-writer.dataset",
+      "version": 1
+    },
+    "binding_is_not_schema_identity": true
+  },
+  "ruleset_binding": {
+    "identity_fields": [
+      "ruleset_binding.application",
+      "ruleset_binding.component",
+      "ruleset_binding.version"
+    ],
+    "current": {
+      "application": "adr-story-writer",
+      "component": "ruleset",
+      "version": "0.2.0"
+    },
+    "stored_with_dataset": true,
+    "ordinary_save_must_not_change_binding": true,
+    "binding_does_not_create_story_authority": true
+  },
+  "compatibility": {
+    "states": [
+      "directly_compatible",
+      "restricted_operation",
+      "migration_required",
+      "rebinding_required",
+      "unsupported",
+      "indeterminate"
+    ],
+    "scoped_to_requested_operation": true,
+    "ordinary_operation_requires_established_compatibility": true,
+    "restricted_operation_is_not_full_compatibility": true,
+    "unknown_or_unresolved_result": "indeterminate",
+    "restricted_operations": [
+      "inspect",
+      "export",
+      "diagnose"
+    ],
+    "no_inference_from": [
+      "filename_match",
+      "version_ordering",
+      "semantic_version_syntax",
+      "parser_success",
+      "field_presence",
+      "apparent_partial_operation"
+    ]
+  },
+  "migration": {
+    "explicit_governed_transition_required": true,
+    "registry_entry_required_before_execution": true,
+    "meaning_preserving_required_for_ordinary_migration": true,
+    "supported_transitions": [
+      {
+        "id": "legacy-unversioned-v0-to-dataset-v1",
+        "source": {
+          "schema": "legacy_unversioned_v0",
+          "ruleset_binding": "absent",
+          "exact_top_level": [
+            "instance",
+            "story",
+            "canon",
+            "plot",
+            "prose",
+            "chapters"
+          ],
+          "required_literals": {
+            "story.application": "adr-story-writer",
+            "story.dataset_role": "story",
+            "chapters.format": "markdown"
+          },
+          "required_object_keys": {
+            "instance": [
+              "id"
+            ],
+            "story": [
+              "application",
+              "dataset_role",
+              "title",
+              "status"
+            ],
+            "canon": [
+              "character",
+              "setting",
+              "events"
+            ],
+            "plot": [
+              "synopsis",
+              "outline",
+              "sequence"
+            ],
+            "prose": [
+              "beats",
+              "modes",
+              "pseudo_prose"
+            ],
+            "chapters": [
+              "format",
+              "files"
+            ]
+          },
+          "required_array_fields": [
+            "canon.events",
+            "plot.outline",
+            "plot.sequence",
+            "chapters.files"
+          ]
+        },
+        "target": {
+          "schema": {
+            "id": "adr-story-writer.dataset",
+            "version": 1
+          },
+          "ruleset_binding": {
+            "application": "adr-story-writer",
+            "component": "ruleset",
+            "version": "0.2.0"
+          }
+        },
+        "meaning_preserving": true,
+        "semantic_author_decision_required": false
+      }
+    ],
+    "preserve": [
+      "semantic_content",
+      "authority_class",
+      "owning_semantic_surface",
+      "accepted_scope",
+      "candidate_status",
+      "production_approval",
+      "stable_identity",
+      "ordering",
+      "material_dependencies",
+      "generation_provenance",
+      "temporal_meaning",
+      "ambiguity_or_unknown_state",
+      "author_declared_constraints"
+    ],
+    "consequential_semantic_choice_requires_author_decision": true,
+    "partial_target_is_not_success": true,
+    "mixed_source_target_is_not_ordinary_state": true,
+    "ambiguous_source_behavior": {
+      "state": "indeterminate",
+      "semantic_author_decision_required": true,
+      "unresolved_decision": "legacy_realization_identity",
+      "ordinary_operation_permitted": false
+    }
+  },
+  "rebinding": {
+    "explicit_authorization_required": true,
+    "compatibility_required_before_completion": true,
+    "supported_transitions": [
+      {
+        "id": "ruleset-0.1.0-to-0.2.0",
+        "schema": {
+          "id": "adr-story-writer.dataset",
+          "version": 1
+        },
+        "source": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.1.0"
+        },
+        "target": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.2.0"
+        },
+        "semantic_revision_required": false
+      }
+    ],
+    "does_not_accept_or_reject_story_meaning": true,
+    "does_not_change_authority_class": true,
+    "does_not_change_manuscript_acceptance": true,
+    "does_not_change_production_approval": true,
+    "does_not_imply_migration_success": true
+  },
+  "transition_provenance": {
+    "dataset_field": "compatibility_history",
+    "required_fields": [
+      "source_realization",
+      "target_realization",
+      "operation",
+      "unresolved_decisions_or_losses",
+      "semantic_author_decision_required"
+    ],
+    "is_not_story_authority": true
+  },
+  "persistence": {
+    "coherent_target_required": true,
+    "atomic_replace_required_for_file_backend": true,
+    "partial_target_must_not_be_reported_as_success": true
+  },
+  "failure": {
+    "unknown_schema_or_ruleset_fails_safe": true,
+    "allowed_paths": [
+      "restricted_inspection",
+      "diagnostic_reporting",
+      "recovery",
+      "migration",
+      "rebinding",
+      "refusal"
+    ],
+    "must_not_invent_schema_mapping": true,
+    "must_not_invent_semantic_interpretation": true
+  },
+  "dataset_boundary": {
+    "story_instance_state_external_to_ruleset_repository": true,
+    "reverse_ruleset_to_dataset_instance_binding_forbidden": true
+  }
+}
