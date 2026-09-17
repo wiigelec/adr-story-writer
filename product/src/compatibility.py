@@ -28,12 +28,43 @@ def load_contract(path: Path = DEFAULT_CONTRACT) -> dict[str, Any]:
     return data
 
 
+def _get_path(data: dict[str, Any], dotted: str) -> Any:
+    current: Any = data
+    for part in dotted.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return None
+        current = current[part]
+    return current
+
+
 def _legacy_matches(dataset: dict[str, Any], transition: dict[str, Any]) -> bool:
     source = transition["source"]
-    required = set(source.get("required_top_level", []))
-    forbidden = set(source.get("forbidden_top_level", []))
-    keys = set(dataset)
-    return required <= keys and not (forbidden & keys)
+
+    exact_top_level = source.get("exact_top_level")
+    if not isinstance(exact_top_level, list) or set(dataset) != set(exact_top_level):
+        return False
+
+    for path, expected in source.get("required_literals", {}).items():
+        if _get_path(dataset, path) != expected:
+            return False
+
+    for path, required_keys in source.get("required_object_keys", {}).items():
+        value = _get_path(dataset, path)
+        if not isinstance(value, dict) or set(value) != set(required_keys):
+            return False
+
+    for path in source.get("required_array_fields", []):
+        if not isinstance(_get_path(dataset, path), list):
+            return False
+
+    return True
+
+
+def _legacy_shaped(dataset: dict[str, Any]) -> bool:
+    if "schema" in dataset or "ruleset_binding" in dataset:
+        return False
+    historical = {"instance", "story", "canon", "plot", "prose", "chapters"}
+    return bool(historical & set(dataset))
 
 
 def _binding_key(binding: Any) -> tuple[Any, Any, Any] | None:
@@ -103,10 +134,19 @@ def classify(
                 "permitted": ["migrate", "inspect", "export", "diagnose"],
             }
         else:
+            ambiguous = contract["migration"].get("ambiguous_source_behavior", {})
             result = {
                 "state": "indeterminate",
-                "reason": "unversioned Dataset does not match an explicitly supported legacy realization",
+                "reason": "unversioned Dataset cannot be identified as the exact supported legacy realization",
                 "permitted": ["inspect", "export", "diagnose"],
+                "semantic_author_decision_required": bool(
+                    ambiguous.get("semantic_author_decision_required")
+                ) if _legacy_shaped(dataset) else False,
+                "unresolved_decisions": (
+                    [ambiguous.get("unresolved_decision")]
+                    if _legacy_shaped(dataset) and ambiguous.get("unresolved_decision")
+                    else []
+                ),
             }
     else:
         result = {
@@ -175,7 +215,7 @@ def migrate(
     _append_provenance(
         migrated,
         operation=f"migration:{transition_id}",
-        source_realization={"schema": "legacy_unversioned", "ruleset_binding": "absent"},
+        source_realization={"schema": "legacy_unversioned_v0", "ruleset_binding": "absent"},
         target_realization=copy.deepcopy(transition["target"]),
         semantic_author_decision_required=bool(transition.get("semantic_author_decision_required")),
     )

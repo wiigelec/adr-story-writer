@@ -212,6 +212,15 @@ def task_fs002_compatibility_contract() -> bool:
         and check(forbidden_inference <= set(comp.get("no_inference_from", [])), "FS-002: compatibility inference prohibitions incomplete")
         and check(comp.get("ordinary_operation_requires_established_compatibility") is True, "FS-002: ordinary-operation gate missing")
         and check("legacy-unversioned-v0-to-dataset-v1" in migration_ids, "FS-002: supported migration missing")
+        and check(
+            set(migration.get("supported_transitions", [])[0].get("source", {}).get("exact_top_level", []))
+            == {"instance", "story", "canon", "plot", "prose", "chapters"},
+            "FS-002: legacy migration must use an exact historical realization signature",
+        )
+        and check(
+            migration.get("ambiguous_source_behavior", {}).get("semantic_author_decision_required") is True,
+            "FS-002: ambiguous legacy source must surface author decision",
+        )
         and check("ruleset-0.1.0-to-0.2.0" in rebind_ids, "FS-002: supported rebinding missing")
     )
 
@@ -224,22 +233,116 @@ def _story_payload(dataset: dict) -> dict:
 def task_fs002_runtime_transitions() -> bool:
     rt = load_fs002_runtime()
     contract = rt.load_contract()
+
     legacy = {
         "instance": {"id": "story-1"},
-        "story": {"application": "adr-story-writer", "dataset_role": "story", "title": "Test", "status": "active"},
-        "canon": {"character": {"c1": {"authority_class": "accepted_semantic"}}, "setting": {}, "events": []},
-        "plot": {"synopsis": {}, "outline": [], "sequence": [{"id": "s1", "authority_class": "candidate_semantic"}]},
-        "prose": {"beats": {}, "modes": {}, "pseudo_prose": {}},
-        "chapters": {"format": "markdown", "files": []},
+        "story": {
+            "application": "adr-story-writer",
+            "dataset_role": "story",
+            "title": "Continuity Fixture",
+            "status": "active",
+        },
+        "canon": {
+            "character": {
+                "c1": {
+                    "id": "character-1",
+                    "surface": "canon.character",
+                    "authority_class": "accepted_semantic",
+                    "revision": "r7",
+                    "temporal_state": {"as_of": "event-3"},
+                    "ambiguity": {"eye_color": "unknown"},
+                }
+            },
+            "setting": {},
+            "events": [
+                {
+                    "id": "event-3",
+                    "surface": "canon.events",
+                    "authority_class": "accepted_semantic",
+                    "revision": "r2",
+                }
+            ],
+        },
+        "plot": {
+            "synopsis": {},
+            "outline": [],
+            "sequence": [
+                {
+                    "id": "sequence-9",
+                    "surface": "plot.sequence",
+                    "authority_class": "candidate_semantic",
+                    "revision": "r3",
+                    "dependencies": ["character-1", "event-3"],
+                    "candidate_assumptions": ["assumption-weather"],
+                }
+            ],
+        },
+        "prose": {
+            "beats": {
+                "beat-4": {
+                    "id": "beat-4",
+                    "surface": "prose.beats",
+                    "authority_class": "production_approved",
+                    "revision": "r5",
+                    "protected_material": ["exact-line-1"],
+                    "generation_provenance": {
+                        "generation_package_id": "gp-12",
+                        "selected_revisions": ["r7", "r2", "r3"],
+                    },
+                }
+            },
+            "modes": {},
+            "pseudo_prose": {},
+        },
+        "chapters": {
+            "format": "markdown",
+            "files": [
+                {
+                    "id": "chapter-1",
+                    "authority_class": "accepted_manuscript",
+                    "ordinal": 1,
+                    "path": "chapters/001.md",
+                }
+            ],
+        },
     }
+
     pre_story = json.loads(json.dumps(legacy))
     status = rt.classify(legacy, contract=contract)
-    if not check(status.get("state") == "migration_required", "FS-002: legacy Dataset not classified migration_required"):
+    if not check(status.get("state") == "migration_required", "FS-002: exact legacy Dataset not classified migration_required"):
         return False
+
     migrated = rt.migrate(legacy, status["transition"], authorized=True, contract=contract)
     if not check(_story_payload(migrated) == pre_story, "FS-002: migration changed governed story payload"):
         return False
     if not check(rt.classify(migrated, contract=contract).get("state") == "directly_compatible", "FS-002: migrated Dataset not directly compatible"):
+        return False
+
+    ambiguous_legacy = json.loads(json.dumps(legacy))
+    ambiguous_legacy["story"]["legacy_extra"] = "unrecognized"
+    ambiguous = rt.classify(ambiguous_legacy, contract=contract)
+    if not check(ambiguous.get("state") == "indeterminate", "FS-002: ambiguous legacy source not indeterminate"):
+        return False
+    if not check(ambiguous.get("semantic_author_decision_required") is True, "FS-002: ambiguous legacy source did not surface author decision"):
+        return False
+    if not check("legacy_realization_identity" in ambiguous.get("unresolved_decisions", []), "FS-002: unresolved legacy identity decision missing"):
+        return False
+    try:
+        rt.migrate(ambiguous_legacy, "legacy-unversioned-v0-to-dataset-v1", authorized=True, contract=contract)
+        return check(False, "FS-002: ambiguous legacy Dataset was migrated")
+    except rt.TransitionError:
+        pass
+
+    field_presence_only = {
+        "instance": {},
+        "story": {},
+        "canon": {},
+        "plot": {},
+        "prose": {},
+        "chapters": {},
+    }
+    field_only_status = rt.classify(field_presence_only, contract=contract)
+    if not check(field_only_status.get("state") == "indeterminate", "FS-002: field-presence-only Dataset was treated as compatible"):
         return False
 
     old_binding = json.loads(json.dumps(migrated))
@@ -248,6 +351,7 @@ def task_fs002_runtime_transitions() -> bool:
     status = rt.classify(old_binding, contract=contract)
     if not check(status.get("state") == "rebinding_required", "FS-002: known compatible old binding not classified rebinding_required"):
         return False
+
     rebound = rt.rebind(old_binding, status["transition"], authorized=True, contract=contract)
     if not check(_story_payload(rebound) == before_rebind, "FS-002: rebinding changed governed story payload"):
         return False
@@ -262,11 +366,13 @@ def task_fs002_runtime_transitions() -> bool:
         return False
     if not check(inspect.get("state") == "restricted_operation", "FS-002: safe restricted inspection unavailable"):
         return False
+
     try:
         rt.migrate(unknown, "legacy-unversioned-v0-to-dataset-v1", authorized=True, contract=contract)
         return check(False, "FS-002: unsupported Dataset was migrated")
     except rt.TransitionError:
         pass
+
     try:
         rt.rebind(old_binding, "ruleset-0.1.0-to-0.2.0", authorized=False, contract=contract)
         return check(False, "FS-002: rebinding proceeded without authorization")
@@ -277,10 +383,33 @@ def task_fs002_runtime_transitions() -> bool:
         path = Path(tmp) / "dataset.json"
         rt.atomic_save(path, rebound)
         loaded, reloaded_status = rt.load_and_classify(path)
+
         if not check(loaded == rebound, "FS-002: coherent persistence did not round-trip"):
             return False
         if not check(reloaded_status.get("state") == "directly_compatible", "FS-002: fresh-session reload not directly compatible"):
             return False
+
+        # Fresh-session reconstruction must preserve governed interpretation,
+        # not merely parse the JSON.
+        character = loaded["canon"]["character"]["c1"]
+        sequence = loaded["plot"]["sequence"][0]
+        beat = loaded["prose"]["beats"]["beat-4"]
+        chapter = loaded["chapters"]["files"][0]
+        if not check(character["authority_class"] == "accepted_semantic", "FS-002: accepted Canon authority lost on reconstruction"):
+            return False
+        if not check(sequence["authority_class"] == "candidate_semantic", "FS-002: candidate Plot authority lost on reconstruction"):
+            return False
+        if not check(sequence["dependencies"] == ["character-1", "event-3"], "FS-002: material dependencies lost on reconstruction"):
+            return False
+        if not check(beat["authority_class"] == "production_approved", "FS-002: production approval lost on reconstruction"):
+            return False
+        if not check(beat["generation_provenance"]["generation_package_id"] == "gp-12", "FS-002: generation provenance lost on reconstruction"):
+            return False
+        if not check(character["ambiguity"]["eye_color"] == "unknown", "FS-002: preserved ambiguity lost on reconstruction"):
+            return False
+        if not check(chapter["authority_class"] == "accepted_manuscript", "FS-002: Manuscript acceptance lost on reconstruction"):
+            return False
+
     return True
 
 
@@ -289,7 +418,12 @@ def task_fs002_transition_provenance() -> bool:
     contract = rt.load_contract()
     legacy = {
         "instance": {"id": "story-2"},
-        "story": {"application": "adr-story-writer", "dataset_role": "story", "title": None, "status": "active"},
+        "story": {
+            "application": "adr-story-writer",
+            "dataset_role": "story",
+            "title": None,
+            "status": "active",
+        },
         "canon": {"character": {}, "setting": {}, "events": []},
         "plot": {"synopsis": {}, "outline": [], "sequence": []},
         "prose": {"beats": {}, "modes": {}, "pseudo_prose": {}},
@@ -301,6 +435,7 @@ def task_fs002_transition_provenance() -> bool:
     return (
         check(len(history) == 1, "FS-002: migration provenance entry missing")
         and check(required <= set(history[0]), "FS-002: migration provenance fields incomplete")
+        and check(history[0]["source_realization"]["schema"] == "legacy_unversioned_v0", "FS-002: migration source realization not exact")
         and check(history[0]["semantic_author_decision_required"] is False, "FS-002: supported migration unexpectedly requires semantic invention")
     )
 
