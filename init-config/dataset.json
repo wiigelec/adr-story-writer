@@ -1,4 +1,13 @@
 {
+  "schema": {
+    "id": "adr-story-writer.dataset",
+    "version": 1
+  },
+  "ruleset_binding": {
+    "application": "adr-story-writer",
+    "component": "ruleset",
+    "version": "0.1.0"
+  },
   "instance": {
     "id": "adr-story-writer-dataset-template"
   },
