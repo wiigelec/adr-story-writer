@@ -20,7 +20,7 @@
     "current": {
       "application": "adr-story-writer",
       "component": "ruleset",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "stored_with_dataset": true,
     "ordinary_save_must_not_change_binding": true,
@@ -39,6 +39,11 @@
     "ordinary_operation_requires_established_compatibility": true,
     "restricted_operation_is_not_full_compatibility": true,
     "unknown_or_unresolved_result": "indeterminate",
+    "restricted_operations": [
+      "inspect",
+      "export",
+      "diagnose"
+    ],
     "no_inference_from": [
       "filename_match",
       "version_ordering",
@@ -50,9 +55,42 @@
   },
   "migration": {
     "explicit_governed_transition_required": true,
-    "supported_transitions": [],
     "registry_entry_required_before_execution": true,
     "meaning_preserving_required_for_ordinary_migration": true,
+    "supported_transitions": [
+      {
+        "id": "legacy-unversioned-v0-to-dataset-v1",
+        "source": {
+          "schema": "legacy_unversioned",
+          "ruleset_binding": "absent",
+          "required_top_level": [
+            "instance",
+            "story",
+            "canon",
+            "plot",
+            "prose",
+            "chapters"
+          ],
+          "forbidden_top_level": [
+            "schema",
+            "ruleset_binding"
+          ]
+        },
+        "target": {
+          "schema": {
+            "id": "adr-story-writer.dataset",
+            "version": 1
+          },
+          "ruleset_binding": {
+            "application": "adr-story-writer",
+            "component": "ruleset",
+            "version": "0.2.0"
+          }
+        },
+        "meaning_preserving": true,
+        "semantic_author_decision_required": false
+      }
+    ],
     "preserve": [
       "semantic_content",
       "authority_class",
@@ -75,6 +113,26 @@
   "rebinding": {
     "explicit_authorization_required": true,
     "compatibility_required_before_completion": true,
+    "supported_transitions": [
+      {
+        "id": "ruleset-0.1.0-to-0.2.0",
+        "schema": {
+          "id": "adr-story-writer.dataset",
+          "version": 1
+        },
+        "source": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.1.0"
+        },
+        "target": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.2.0"
+        },
+        "semantic_revision_required": false
+      }
+    ],
     "does_not_accept_or_reject_story_meaning": true,
     "does_not_change_authority_class": true,
     "does_not_change_manuscript_acceptance": true,
@@ -82,6 +140,7 @@
     "does_not_imply_migration_success": true
   },
   "transition_provenance": {
+    "dataset_field": "compatibility_history",
     "required_fields": [
       "source_realization",
       "target_realization",
@@ -90,6 +149,11 @@
       "semantic_author_decision_required"
     ],
     "is_not_story_authority": true
+  },
+  "persistence": {
+    "coherent_target_required": true,
+    "atomic_replace_required_for_file_backend": true,
+    "partial_target_must_not_be_reported_as_success": true
   },
   "failure": {
     "unknown_schema_or_ruleset_fails_safe": true,

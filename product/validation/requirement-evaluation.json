@@ -111,6 +111,137 @@
       "tasks": [
         "fs001-dataset-boundary"
       ]
+    },
+    {
+      "requirement": "FS-002-NR-001",
+      "tasks": [
+        "fs002-planning-binding"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-002",
+      "tasks": [
+        "fs002-compatibility-contract"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-003",
+      "tasks": [
+        "fs002-compatibility-contract",
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-004",
+      "tasks": [
+        "fs002-compatibility-contract",
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-005",
+      "tasks": [
+        "fs002-compatibility-contract",
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-006",
+      "tasks": [
+        "fs002-compatibility-contract",
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-007",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-008",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-009",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-010",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-011",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-012",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-013",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-014",
+      "tasks": [
+        "fs002-transition-provenance"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-015",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-016",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-017",
+      "tasks": [
+        "fs002-runtime-transitions",
+        "fs002-transition-provenance"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-018",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-019",
+      "tasks": [
+        "fs002-runtime-transitions"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-021",
+      "tasks": [
+        "fs002-manifest-bindings"
+      ]
+    },
+    {
+      "requirement": "FS-002-NR-023",
+      "tasks": [
+        "fs002-dataset-boundary"
+      ]
     }
   ]
 }

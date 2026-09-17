@@ -2,16 +2,22 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
+
+sys.dont_write_bytecode = True
+import tempfile
 from pathlib import Path
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "product" / "validation" / "requirement-evaluation.json"
 REQS = ROOT / "product" / "specs" / "FS-001-requirements.md"
+FS002_REQS = ROOT / "product" / "specs" / "FS-002-requirements.md"
 DESIGN_REVISION = "3ba9e3f600adf2a5ccae8db8aca00ebbbb9c17c9"
+FS002_DESIGN_REVISION = "325c7f22cd140dee43c01dbf7f93500325585ce9"
 TASKS: dict[str, Callable[[], bool | None]] = {}
 
 
@@ -154,6 +160,185 @@ TASKS.update({
     "fs001-authority-operations": task_authority_operations,
     "fs001-dataset-boundary": task_dataset_boundary,
     "fs001-manifest-bindings": task_manifest_bindings,
+})
+
+
+def load_fs002_runtime():
+    path = ROOT / "product" / "src" / "compatibility.py"
+    spec = importlib.util.spec_from_file_location("fs002_compatibility", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("cannot load FS-002 compatibility runtime")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def task_fs002_planning_binding() -> bool:
+    for rel in (
+        "product/planning/FS-002-ruleset-dataset-compatibility-migration-and-rebinding/functional-set.md",
+        "product/planning/FS-002-ruleset-dataset-compatibility-migration-and-rebinding/plan.md",
+    ):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        if not check(f"design_revision: {FS002_DESIGN_REVISION}" in text, f"{rel}: missing exact Design binding"):
+            return False
+    return check(FS002_REQS.is_file(), "FS-002 normative requirements missing")
+
+
+def task_fs002_compatibility_contract() -> bool:
+    data = load_json("ruleset/compatibility.json")
+    schema = data.get("dataset_schema", {})
+    binding = data.get("ruleset_binding", {})
+    comp = data.get("compatibility", {})
+    migration = data.get("migration", {})
+    rebinding = data.get("rebinding", {})
+    identity = load_json("ruleset/identity.json")
+    template = load_json("init-config/dataset.json")
+    states = {
+        "directly_compatible", "restricted_operation", "migration_required",
+        "rebinding_required", "unsupported", "indeterminate",
+    }
+    forbidden_inference = {
+        "filename_match", "version_ordering", "semantic_version_syntax",
+        "parser_success", "field_presence", "apparent_partial_operation",
+    }
+    migration_ids = {t.get("id") for t in migration.get("supported_transitions", []) if isinstance(t, dict)}
+    rebind_ids = {t.get("id") for t in rebinding.get("supported_transitions", []) if isinstance(t, dict)}
+    return (
+        check(schema.get("current") == template.get("schema"), "FS-002: Dataset schema identity mismatch")
+        and check(binding.get("current") == template.get("ruleset_binding"), "FS-002: template Ruleset binding mismatch")
+        and check(binding.get("current") == identity, "FS-002: current Ruleset identity mismatch")
+        and check(schema.get("binding_is_not_schema_identity") is True, "FS-002: schema and binding axes collapsed")
+        and check(states == set(comp.get("states", [])), "FS-002: compatibility states incomplete")
+        and check(forbidden_inference <= set(comp.get("no_inference_from", [])), "FS-002: compatibility inference prohibitions incomplete")
+        and check(comp.get("ordinary_operation_requires_established_compatibility") is True, "FS-002: ordinary-operation gate missing")
+        and check("legacy-unversioned-v0-to-dataset-v1" in migration_ids, "FS-002: supported migration missing")
+        and check("ruleset-0.1.0-to-0.2.0" in rebind_ids, "FS-002: supported rebinding missing")
+    )
+
+
+def _story_payload(dataset: dict) -> dict:
+    ignored = {"schema", "ruleset_binding", "compatibility_history"}
+    return {k: v for k, v in dataset.items() if k not in ignored}
+
+
+def task_fs002_runtime_transitions() -> bool:
+    rt = load_fs002_runtime()
+    contract = rt.load_contract()
+    legacy = {
+        "instance": {"id": "story-1"},
+        "story": {"application": "adr-story-writer", "dataset_role": "story", "title": "Test", "status": "active"},
+        "canon": {"character": {"c1": {"authority_class": "accepted_semantic"}}, "setting": {}, "events": []},
+        "plot": {"synopsis": {}, "outline": [], "sequence": [{"id": "s1", "authority_class": "candidate_semantic"}]},
+        "prose": {"beats": {}, "modes": {}, "pseudo_prose": {}},
+        "chapters": {"format": "markdown", "files": []},
+    }
+    pre_story = json.loads(json.dumps(legacy))
+    status = rt.classify(legacy, contract=contract)
+    if not check(status.get("state") == "migration_required", "FS-002: legacy Dataset not classified migration_required"):
+        return False
+    migrated = rt.migrate(legacy, status["transition"], authorized=True, contract=contract)
+    if not check(_story_payload(migrated) == pre_story, "FS-002: migration changed governed story payload"):
+        return False
+    if not check(rt.classify(migrated, contract=contract).get("state") == "directly_compatible", "FS-002: migrated Dataset not directly compatible"):
+        return False
+
+    old_binding = json.loads(json.dumps(migrated))
+    old_binding["ruleset_binding"]["version"] = "0.1.0"
+    before_rebind = _story_payload(old_binding)
+    status = rt.classify(old_binding, contract=contract)
+    if not check(status.get("state") == "rebinding_required", "FS-002: known compatible old binding not classified rebinding_required"):
+        return False
+    rebound = rt.rebind(old_binding, status["transition"], authorized=True, contract=contract)
+    if not check(_story_payload(rebound) == before_rebind, "FS-002: rebinding changed governed story payload"):
+        return False
+    if not check(rt.classify(rebound, contract=contract).get("state") == "directly_compatible", "FS-002: rebound Dataset not directly compatible"):
+        return False
+
+    unknown = json.loads(json.dumps(rebound))
+    unknown["schema"] = {"id": "adr-story-writer.dataset", "version": 999}
+    ordinary = rt.classify(unknown, contract=contract)
+    inspect = rt.classify(unknown, requested_operation="inspect", contract=contract)
+    if not check(ordinary.get("state") == "unsupported", "FS-002: unknown schema did not fail safe"):
+        return False
+    if not check(inspect.get("state") == "restricted_operation", "FS-002: safe restricted inspection unavailable"):
+        return False
+    try:
+        rt.migrate(unknown, "legacy-unversioned-v0-to-dataset-v1", authorized=True, contract=contract)
+        return check(False, "FS-002: unsupported Dataset was migrated")
+    except rt.TransitionError:
+        pass
+    try:
+        rt.rebind(old_binding, "ruleset-0.1.0-to-0.2.0", authorized=False, contract=contract)
+        return check(False, "FS-002: rebinding proceeded without authorization")
+    except rt.TransitionError:
+        pass
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "dataset.json"
+        rt.atomic_save(path, rebound)
+        loaded, reloaded_status = rt.load_and_classify(path)
+        if not check(loaded == rebound, "FS-002: coherent persistence did not round-trip"):
+            return False
+        if not check(reloaded_status.get("state") == "directly_compatible", "FS-002: fresh-session reload not directly compatible"):
+            return False
+    return True
+
+
+def task_fs002_transition_provenance() -> bool:
+    rt = load_fs002_runtime()
+    contract = rt.load_contract()
+    legacy = {
+        "instance": {"id": "story-2"},
+        "story": {"application": "adr-story-writer", "dataset_role": "story", "title": None, "status": "active"},
+        "canon": {"character": {}, "setting": {}, "events": []},
+        "plot": {"synopsis": {}, "outline": [], "sequence": []},
+        "prose": {"beats": {}, "modes": {}, "pseudo_prose": {}},
+        "chapters": {"format": "markdown", "files": []},
+    }
+    migrated = rt.migrate(legacy, "legacy-unversioned-v0-to-dataset-v1", authorized=True, contract=contract)
+    required = set(contract["transition_provenance"]["required_fields"])
+    history = migrated.get(contract["transition_provenance"]["dataset_field"], [])
+    return (
+        check(len(history) == 1, "FS-002: migration provenance entry missing")
+        and check(required <= set(history[0]), "FS-002: migration provenance fields incomplete")
+        and check(history[0]["semantic_author_decision_required"] is False, "FS-002: supported migration unexpectedly requires semantic invention")
+    )
+
+
+def task_fs002_dataset_boundary() -> bool:
+    data = load_json("ruleset/compatibility.json")
+    boundary = data.get("dataset_boundary", {})
+    return (
+        check(not (ROOT / "dataset").exists(), "FS-002: story Dataset instance stored in Ruleset repository")
+        and check(boundary.get("story_instance_state_external_to_ruleset_repository") is True, "FS-002: external Dataset boundary missing")
+        and check(boundary.get("reverse_ruleset_to_dataset_instance_binding_forbidden") is True, "FS-002: reverse Dataset binding prohibition missing")
+    )
+
+
+def task_fs002_manifest_bindings() -> bool:
+    text = FS002_REQS.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"^### (FS-002-NR-\d{3}).*?\n\*\*Classification: ([MSB])\*\*(?:\n\*\*State: (Inactive)\*\*)?",
+        re.M | re.S,
+    )
+    parsed = pattern.findall(text)
+    required = {rid for rid, cls, state in parsed if cls in {"M", "B"} and state != "Inactive"}
+    forbidden = {rid for rid, cls, state in parsed if cls == "S" or state == "Inactive"}
+    manifest = load_manifest()
+    bound = {b.get("requirement") for b in manifest["bindings"] if isinstance(b, dict)}
+    return (
+        check(required <= bound, f"manifest missing FS-002 mechanical bindings: {sorted(required - bound)}")
+        and check(not (forbidden & bound), f"manifest binds FS-002 semantic/inactive requirements: {sorted(forbidden & bound)}")
+    )
+
+
+TASKS.update({
+    "fs002-planning-binding": task_fs002_planning_binding,
+    "fs002-compatibility-contract": task_fs002_compatibility_contract,
+    "fs002-runtime-transitions": task_fs002_runtime_transitions,
+    "fs002-transition-provenance": task_fs002_transition_provenance,
+    "fs002-dataset-boundary": task_fs002_dataset_boundary,
+    "fs002-manifest-bindings": task_fs002_manifest_bindings,
 })
 
 
