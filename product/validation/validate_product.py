@@ -40,8 +40,8 @@ def check(condition: bool, message: str) -> bool:
 
 def task_planning_binding() -> bool:
     for rel in (
-        "product/specs/FS-001-governed-prose-production-and-acceptance.md",
-        "product/specs/FS-001-plan.md",
+        "product/planning/FS-001-governed-prose-production-and-acceptance/functional-set.md",
+        "product/planning/FS-001-governed-prose-production-and-acceptance/plan.md",
     ):
         text = (ROOT / rel).read_text(encoding="utf-8")
         if not check(f"design_revision: {DESIGN_REVISION}" in text, f"{rel}: missing exact Design binding"):
