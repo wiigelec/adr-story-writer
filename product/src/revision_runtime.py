@@ -106,60 +106,48 @@ def _history_snapshot(artifact: dict[str, Any]) -> dict[str, Any]:
 
 
 def _relations(artifact: dict[str, Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    explicit_targets: set[str] = set()
     explicit = artifact.get("dependency_relations")
     if isinstance(explicit, list):
-        result = []
         for relation in explicit:
-            if isinstance(relation, dict) and isinstance(relation.get("target_id"), str):
-                value = copy.deepcopy(relation)
-                value.setdefault("material", True)
-                result.append(value)
-        return result
+            if not isinstance(relation, dict):
+                continue
+            target_id = relation.get("target_id")
+            if not isinstance(target_id, str) or not target_id:
+                continue
+            result.append(copy.deepcopy(relation))
+            explicit_targets.add(target_id)
 
     dependencies = artifact.get("dependencies", [])
-    if not isinstance(dependencies, list):
-        return []
-    return [
-        {
-            "target_id": target,
-            "target_revision": None,
-            "authority_basis": "accepted",
-            "material": True,
-        }
-        for target in dependencies
-        if isinstance(target, str) and target
-    ]
-
+    if isinstance(dependencies, list):
+        for target in dependencies:
+            if (
+                isinstance(target, str)
+                and target
+                and target not in explicit_targets
+            ):
+                result.append({
+                    "target_id": target,
+                    "target_revision": None,
+                    "authority_basis": "accepted",
+                    "material": True,
+                })
+    return result
 
 def _matching_relation(
     artifact: dict[str, Any],
     target_id: str,
     target_revision: str | None,
 ) -> dict[str, Any] | None:
-    explicit = artifact.get("dependency_relations")
-    if isinstance(explicit, list):
-        matching = [
-            relation
-            for relation in explicit
-            if isinstance(relation, dict) and relation.get("target_id") == target_id
-        ]
-        if matching:
-            for relation in matching:
-                revision = relation.get("target_revision")
-                if revision is None or target_revision is None or revision == target_revision:
-                    return relation
-            return None
-
-    dependencies = artifact.get("dependencies", [])
-    if isinstance(dependencies, list) and target_id in dependencies:
-        return {
-            "target_id": target_id,
-            "target_revision": None,
-            "authority_basis": "accepted",
-            "material": True,
-        }
+    for relation in _relations(artifact):
+        if relation.get("target_id") != target_id:
+            continue
+        revision = relation.get("target_revision")
+        if revision is None or target_revision is None or revision == target_revision:
+            return relation
+        return None
     return None
-
 
 def _ensure_explicit_relation(
     artifact: dict[str, Any],
@@ -257,6 +245,88 @@ def _candidate_for(dataset: dict[str, Any], candidate_id: str):
     raise RevisionRuntimeError(f"unknown revision candidate: {candidate_id}")
 
 
+def reject_revision(
+    dataset: dict[str, Any],
+    candidate_id: str,
+    *,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    target, candidate = _candidate_for(dataset, candidate_id)
+    if candidate.get("status") != "candidate":
+        raise SCENE.AcceptanceError("revision candidate is not pending")
+    candidate["status"] = "rejected"
+    if reason:
+        candidate["resolution_reason"] = reason
+    return copy.deepcopy(candidate)
+
+
+def withdraw_revision(
+    dataset: dict[str, Any],
+    candidate_id: str,
+    *,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    target, candidate = _candidate_for(dataset, candidate_id)
+    if candidate.get("status") != "candidate":
+        raise SCENE.AcceptanceError("revision candidate is not pending")
+    candidate["status"] = "withdrawn"
+    if reason:
+        candidate["resolution_reason"] = reason
+    return copy.deepcopy(candidate)
+
+
+def _reconciliation_record(
+    artifact: dict[str, Any],
+    current: dict[str, Any],
+    *,
+    action: str,
+    before_revision: str | None,
+    dependent_id: str,
+) -> dict[str, Any]:
+    return {
+        "impact_id": current["id"],
+        "upstream_id": current["upstream_id"],
+        "upstream_result_id": current["upstream_result_id"],
+        "from_revision": current["from_revision"],
+        "to_revision": current["to_revision"],
+        "action": action,
+        "dependent_id": dependent_id,
+        "result_dependent_id": artifact.get("id"),
+        "dependent_revision_before": before_revision,
+        "dependent_revision_after": artifact.get("revision"),
+        "authority_class_after": artifact.get("authority_class"),
+        "state": "reconciled",
+    }
+
+
+def _finish_reconciliation(
+    artifact: dict[str, Any],
+    current: dict[str, Any],
+    *,
+    action: str,
+    before_revision: str | None,
+    dependent_id: str,
+) -> dict[str, Any]:
+    _update_relation_to_current(artifact, current)
+    record = _reconciliation_record(
+        artifact,
+        current,
+        action=action,
+        before_revision=before_revision,
+        dependent_id=dependent_id,
+    )
+    history = artifact.setdefault("reconciliation_history", [])
+    if not isinstance(history, list):
+        raise RevisionRuntimeError("reconciliation_history must be an array")
+    history.append(copy.deepcopy(record))
+    artifact["reconciliation"] = {
+        **copy.deepcopy(current),
+        "state": "reconciled",
+        "action": action,
+    }
+    return record
+
+
 def accept_revision(
     dataset: dict[str, Any],
     candidate_id: str,
@@ -289,6 +359,7 @@ def accept_revision(
     history.append(old_snapshot)
 
     operation = candidate["identity_operation"]
+    candidate_snapshot = copy.deepcopy(candidate)
     if operation == "replacement":
         replacement_id = candidate.get("replacement_id")
         if not isinstance(replacement_id, str) or not replacement_id:
@@ -303,20 +374,51 @@ def accept_revision(
             new_target[field] = copy.deepcopy(value)
         new_target["revision"] = new_revision
         container[key] = new_target
-        candidate["status"] = "accepted"
+        result_target = new_target
         result_id = replacement_id
     else:
         target["revision_history"] = history
         for field, value in candidate["proposed_changes"].items():
             target[field] = copy.deepcopy(value)
         target["revision"] = new_revision
-        candidate["status"] = "accepted"
-        target["last_revision_acceptance"] = {
-            "candidate_id": candidate_id,
-            "from_revision": old_revision,
-            "to_revision": new_revision,
-        }
+        result_target = target
         result_id = old_id
+
+    candidate["status"] = "accepted"
+    candidate_snapshot["status"] = "accepted"
+    acceptance = {
+        "candidate_id": candidate_id,
+        "candidate_revision": candidate_snapshot["revision"],
+        "candidate_snapshot": candidate_snapshot,
+        "from_revision": old_revision,
+        "to_revision": new_revision,
+        "identity_operation": operation,
+        "target_id": old_id,
+        "result_target_id": result_id,
+    }
+    acceptance_history = result_target.setdefault("revision_acceptance_history", [])
+    if not isinstance(acceptance_history, list):
+        raise RevisionRuntimeError("revision_acceptance_history must be an array")
+    acceptance_history.append(copy.deepcopy(acceptance))
+    result_target["last_revision_acceptance"] = copy.deepcopy(acceptance)
+
+    reconciliation_context = candidate_snapshot.get("reconciliation_context")
+    if isinstance(reconciliation_context, dict):
+        current = result_target.get("reconciliation")
+        if (
+            not isinstance(current, dict)
+            or current.get("id") != reconciliation_context.get("impact_id")
+        ):
+            raise SCENE.AcceptanceError(
+                "accepted reconciliation candidate no longer matches current impact"
+            )
+        _finish_reconciliation(
+            result_target,
+            current,
+            action=operation,
+            before_revision=old_revision,
+            dependent_id=old_id,
+        )
 
     return {
         "id": _stable_id(
@@ -331,13 +433,12 @@ def accept_revision(
         ),
         "target_id": old_id,
         "result_target_id": result_id,
-        "surface": candidate["surface"],
+        "surface": candidate_snapshot["surface"],
         "from_revision": old_revision,
         "to_revision": new_revision,
         "identity_operation": operation,
         "candidate_id": candidate_id,
     }
-
 
 def analyze_impact(
     dataset: dict[str, Any],
@@ -347,6 +448,7 @@ def analyze_impact(
     from_revision = accepted_change["from_revision"]
     to_target_id = accepted_change["result_target_id"]
     to_revision = accepted_change["to_revision"]
+    replacement = accepted_change.get("identity_operation") == "replacement"
     impacts: list[dict[str, Any]] = []
 
     for dependent in SCENE._iter_artifacts(dataset):
@@ -355,8 +457,19 @@ def analyze_impact(
         relation = _matching_relation(dependent, target_id, from_revision)
         if relation is None:
             continue
-        material = bool(relation.get("material", True))
-        state = "review_required" if material else "still_valid"
+
+        if "material" not in relation:
+            material: bool | None = None
+            state = "unresolved"
+        else:
+            material = bool(relation["material"])
+            if replacement:
+                state = "superseded"
+            elif material:
+                state = "review_required"
+            else:
+                state = "still_valid"
+
         impact = {
             "id": _stable_id(
                 "impact",
@@ -365,6 +478,7 @@ def analyze_impact(
                     "target": target_id,
                     "from_revision": from_revision,
                     "to_revision": to_revision,
+                    "state": state,
                 },
             ),
             "dependent_id": dependent.get("id"),
@@ -378,7 +492,6 @@ def analyze_impact(
         dependent["reconciliation"] = copy.deepcopy(impact)
         impacts.append(impact)
     return impacts
-
 
 def _update_relation_to_current(
     artifact: dict[str, Any],
@@ -428,11 +541,45 @@ def reconcile(
 
     before_revision = artifact.get("revision")
     authority_before = artifact.get("authority_class")
-    result_artifact = artifact
+    owner = _surface_owner(artifact)
 
     if action == "unresolved":
         artifact["reconciliation"] = {**copy.deepcopy(current), "state": "unresolved"}
         return copy.deepcopy(artifact["reconciliation"])
+
+    if action in {"revise", "supersede"} and owner in {"canon", "plot"}:
+        if artifact.get("authority_class") != "accepted_semantic":
+            raise RevisionRuntimeError(
+                "semantic reconciliation revision requires accepted semantic target"
+            )
+        if not isinstance(proposed_changes, dict) or not proposed_changes:
+            raise RevisionRuntimeError(
+                "semantic reconciliation revision requires proposed_changes"
+            )
+        identity_operation = "replacement" if action == "supersede" else "revision"
+        candidate = propose_revision(
+            dataset,
+            dependent_id,
+            proposed_changes,
+            identity_operation=identity_operation,
+            replacement_id=replacement_id,
+        )
+        stored_target, stored_candidate = _candidate_for(dataset, candidate["id"])
+        stored_candidate["reconciliation_context"] = {
+            "impact_id": impact_id,
+            "upstream_id": current["upstream_id"],
+            "upstream_result_id": current["upstream_result_id"],
+            "from_revision": current["from_revision"],
+            "to_revision": current["to_revision"],
+            "action": action,
+        }
+        return {
+            "impact_id": impact_id,
+            "action": action,
+            "dependent_id": dependent_id,
+            "candidate_id": candidate["id"],
+            "state": "candidate_pending_acceptance",
+        }
 
     if action == "withdraw":
         if authority_before not in {
@@ -442,8 +589,15 @@ def reconcile(
         }:
             raise RevisionRuntimeError("only candidate state may be withdrawn")
         artifact["withdrawn"] = True
-        _update_relation_to_current(artifact, current)
-    elif action == "narrow":
+        return _finish_reconciliation(
+            artifact,
+            current,
+            action=action,
+            before_revision=before_revision,
+            dependent_id=dependent_id,
+        )
+
+    if action == "narrow":
         _update_relation_to_current(artifact, current, material=False)
     elif action == "preserve":
         _update_relation_to_current(artifact, current)
@@ -485,7 +639,7 @@ def reconcile(
                 "changes": proposed_changes,
             },
         )
-    else:  # supersede
+    else:  # non-semantic supersede
         if not isinstance(replacement_id, str) or not replacement_id:
             raise RevisionRuntimeError("supersede requires replacement_id")
         container, key = _location(dataset, dependent_id)
@@ -505,34 +659,25 @@ def reconcile(
             },
         )
         container[key] = replacement
-        result_artifact = replacement
+        artifact = replacement
 
-    record = {
-        "impact_id": impact_id,
-        "upstream_id": current["upstream_id"],
-        "upstream_result_id": current["upstream_result_id"],
-        "from_revision": current["from_revision"],
-        "to_revision": current["to_revision"],
-        "action": action,
-        "dependent_id": dependent_id,
-        "result_dependent_id": result_artifact.get("id"),
-        "dependent_revision_before": before_revision,
-        "dependent_revision_after": result_artifact.get("revision"),
-        "authority_class_before": authority_before,
-        "authority_class_after": result_artifact.get("authority_class"),
-        "state": "reconciled",
-    }
-    history = result_artifact.setdefault("reconciliation_history", [])
+    record = _reconciliation_record(
+        artifact,
+        current,
+        action=action,
+        before_revision=before_revision,
+        dependent_id=dependent_id,
+    )
+    history = artifact.setdefault("reconciliation_history", [])
     if not isinstance(history, list):
         raise RevisionRuntimeError("reconciliation_history must be an array")
     history.append(copy.deepcopy(record))
-    result_artifact["reconciliation"] = {
+    artifact["reconciliation"] = {
         **copy.deepcopy(current),
         "state": "reconciled",
         "action": action,
     }
     return record
-
 
 def ensure_artifact_current(dataset: dict[str, Any], artifact: dict[str, Any]) -> None:
     if _blocked(artifact):
@@ -542,7 +687,11 @@ def ensure_artifact_current(dataset: dict[str, Any], artifact: dict[str, Any]) -
 
     index = SCENE.artifact_index(dataset)
     for relation in _relations(artifact):
-        if not bool(relation.get("material", True)):
+        if "material" not in relation:
+            raise SCENE.SceneNotReadyError(
+                f"{artifact.get('id')}: dependency materiality is unresolved"
+            )
+        if not bool(relation["material"]):
             continue
         target_id = relation.get("target_id")
         if not isinstance(target_id, str) or target_id not in index:
@@ -657,6 +806,22 @@ class RevisionSession(SCENE.SceneSession):
 
     def accept_revision(self, candidate_id: str) -> dict[str, Any]:
         return accept_revision(self.dataset, candidate_id)
+
+    def reject_revision(
+        self,
+        candidate_id: str,
+        *,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        return reject_revision(self.dataset, candidate_id, reason=reason)
+
+    def withdraw_revision(
+        self,
+        candidate_id: str,
+        *,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        return withdraw_revision(self.dataset, candidate_id, reason=reason)
 
     def analyze_impact(self, accepted_change: dict[str, Any]) -> list[dict[str, Any]]:
         return analyze_impact(self.dataset, accepted_change)

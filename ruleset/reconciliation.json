@@ -6,7 +6,14 @@
     "stable_identity_preserved_for_continuing_object": true,
     "replacement_requires_explicit_identity_change": true,
     "ambiguous_identity_must_remain_unresolved": true,
-    "prior_revision_provenance_preserved": true
+    "prior_revision_provenance_preserved": true,
+    "candidate_resolution_operations": [
+      "accept",
+      "reject",
+      "withdraw",
+      "replace"
+    ],
+    "replacement_acceptance_provenance_preserved": true
   },
   "impact": {
     "material_dependency_distinct_from_historical_derivation": true,
@@ -17,7 +24,9 @@
       "unresolved"
     ],
     "unrelated_state_must_not_be_invalidated": true,
-    "semantic_equivalence_must_not_be_invented": true
+    "semantic_equivalence_must_not_be_invented": true,
+    "missing_materiality_outcome": "unresolved",
+    "known_replacement_outcome": "superseded"
   },
   "freshness": {
     "is_not_authority_class": true,
@@ -41,7 +50,9 @@
       "unresolved"
     ],
     "accepted_manuscript_not_directly_rewritten": true,
-    "consequential_replacement_meaning_not_invented": true
+    "consequential_replacement_meaning_not_invented": true,
+    "semantic_meaning_change_requires_candidate_acceptance": true,
+    "preserve_unmodified_does_not_require_revision": true
   },
   "generation_package": {
     "used_package_immutable": true,
@@ -53,6 +64,7 @@
     "reconciliation_state_is_durable": true,
     "prior_revision_provenance_is_durable": true,
     "unresolved_state_is_durable": true,
-    "save_conflict_must_fail": true
+    "save_conflict_must_fail": true,
+    "replacement_acceptance_provenance_is_durable": true
   }
 }

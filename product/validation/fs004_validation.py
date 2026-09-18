@@ -86,6 +86,16 @@ def _fixture(root: Path):
             ]
     _write(d / "plot" / "sequence.json", sequence)
 
+    outline = _json(d / "plot" / "outline.json")
+    for item in outline:
+        if item.get("id") == "outline-opening":
+            item["dependency_relations"] = [{
+                "target_id": "event-storm",
+                "target_revision": "canon-event-storm-r1",
+                "authority_basis": "accepted",
+            }]
+    _write(d / "plot" / "outline.json", outline)
+
     beats = _json(d / "prose" / "beats.json")
     beats["scene-002-signal-shed"]["dependency_relations"] = [{
         "target_id": "scene-002-signal-shed",
@@ -173,6 +183,31 @@ def task_revision_runtime() -> bool:
     try:
         event = rt._artifact(session.dataset, "event-storm")
         accepted_before = copy.deepcopy(event)
+
+        rejected = session.propose_revision(
+            "event-storm",
+            {"summary": "Rejected alternate cause."},
+        )
+        session.reject_revision(rejected["id"], reason="author rejected")
+        if not check(
+            rt._artifact(session.dataset, "event-storm")["revision"]
+            == accepted_before["revision"],
+            "FS-004: rejecting a candidate changed accepted state",
+        ):
+            return False
+
+        withdrawn = session.propose_revision(
+            "event-storm",
+            {"summary": "Withdrawn alternate cause."},
+        )
+        session.withdraw_revision(withdrawn["id"], reason="proposal withdrawn")
+        if not check(
+            rt._artifact(session.dataset, "event-storm")["revision"]
+            == accepted_before["revision"],
+            "FS-004: withdrawing a candidate changed accepted state",
+        ):
+            return False
+
         candidate = session.propose_revision(
             "event-storm",
             {
@@ -208,11 +243,11 @@ def task_revision_runtime() -> bool:
             and check(event_after["revision"] != accepted_before["revision"], "FS-004: accepted revision did not establish new revision identity")
             and check(event_after["authority_class"] == "accepted_semantic", "FS-004: revision changed authority class")
             and check(bool(event_after.get("revision_history")), "FS-004: prior accepted revision provenance missing")
+            and check(bool(event_after.get("revision_acceptance_history")), "FS-004: revision acceptance provenance missing")
             and check(change["from_revision"] == accepted_before["revision"], "FS-004: revision change provenance missing source revision")
         )
     finally:
         temp.cleanup()
-
 
 def _perform_reconciliation():
     temp, rt, root, session, package_before = _exercise()
@@ -230,12 +265,10 @@ def _perform_reconciliation():
     by_dependent = {impact["dependent_id"]: impact for impact in impacts}
 
     scene2_impact = by_dependent["scene-002-signal-shed"]
-    scene1_impact = by_dependent["scene-001-arrival"]
-
     scene2_before = copy.deepcopy(rt._artifact(session.dataset, "scene-002-signal-shed"))
     scene1_before = copy.deepcopy(rt._artifact(session.dataset, "scene-001-arrival"))
 
-    scene2_record = session.reconcile(
+    pending = session.reconcile(
         "scene-002-signal-shed",
         scene2_impact["id"],
         "revise",
@@ -246,18 +279,12 @@ def _perform_reconciliation():
             )
         },
     )
-    scene2_after = rt._artifact(session.dataset, "scene-002-signal-shed")
-    scene_change = {
-        "id": "scene2-reconciliation-change",
-        "target_id": "scene-002-signal-shed",
-        "result_target_id": "scene-002-signal-shed",
-        "surface": scene2_after["surface"],
-        "from_revision": scene2_before["revision"],
-        "to_revision": scene2_after["revision"],
-        "identity_operation": "revision",
-        "candidate_id": None,
-    }
-    downstream = session.analyze_impact(scene_change)
+    scene2_candidate_state = copy.deepcopy(
+        rt._artifact(session.dataset, "scene-002-signal-shed")
+    )
+    plot_change = session.accept_revision(pending["candidate_id"])
+
+    downstream = session.analyze_impact(plot_change)
     downstream_by_id = {impact["dependent_id"]: impact for impact in downstream}
 
     for dependent_id in ("beats-scene-002", "pseudo-scene-002"):
@@ -287,10 +314,11 @@ def _perform_reconciliation():
         "impacts": by_dependent,
         "scene1_before": scene1_before,
         "scene2_before": scene2_before,
-        "scene2_record": scene2_record,
+        "scene2_candidate_state": scene2_candidate_state,
+        "pending_plot_revision": pending,
+        "plot_change": plot_change,
         "downstream": downstream_by_id,
     }
-
 
 def task_impact_reconciliation() -> bool:
     env = _perform_reconciliation()
@@ -301,14 +329,34 @@ def task_impact_reconciliation() -> bool:
         scene1 = rt._artifact(session.dataset, "scene-001-arrival")
         scene2 = rt._artifact(session.dataset, "scene-002-signal-shed")
         manuscript = rt._artifact(session.dataset, "manuscript-scene-002")
+        outline = rt._artifact(session.dataset, "outline-opening")
 
         if not check(impacts["scene-002-signal-shed"]["state"] == "review_required", "FS-004: material dependent was not marked review-required"):
             return False
         if not check(impacts["scene-001-arrival"]["state"] == "still_valid", "FS-004: historical/non-material dependent was broadly invalidated"):
             return False
+        if not check(impacts["outline-opening"]["state"] == "unresolved", "FS-004: indeterminate materiality was guessed current"):
+            return False
         if not check(scene1["revision"] == env["scene1_before"]["revision"], "FS-004: unrelated scene was artificially revised"):
             return False
-        if not check(scene2["authority_class"] == env["scene2_before"]["authority_class"], "FS-004: staleness changed Plot authority"):
+        if not check(
+            env["scene2_candidate_state"]["revision"] == env["scene2_before"]["revision"],
+            "FS-004: candidate Plot reconciliation silently changed accepted revision",
+        ):
+            return False
+        if not check(
+            env["scene2_candidate_state"]["purpose"] == env["scene2_before"]["purpose"],
+            "FS-004: candidate Plot reconciliation silently changed accepted meaning",
+        ):
+            return False
+        if not check(
+            env["pending_plot_revision"]["state"] == "candidate_pending_acceptance",
+            "FS-004: Plot reconciliation did not create an explicit candidate",
+        ):
+            return False
+        if not check(scene2["revision"] == env["plot_change"]["to_revision"], "FS-004: accepted Plot revision not established after explicit acceptance"):
+            return False
+        if not check(scene2["authority_class"] == env["scene2_before"]["authority_class"], "FS-004: Plot reconciliation changed authority class"):
             return False
         if not check(manuscript["revision"] == "manuscript-scene-002-r1", "FS-004: upstream change directly rewrote accepted Manuscript"):
             return False
@@ -316,13 +364,18 @@ def task_impact_reconciliation() -> bool:
             return False
         if not check(manuscript["generation_package_id"] == "historical-package-scene-002", "FS-004: historical generation provenance was replaced"):
             return False
-        return check(
-            manuscript.get("reconciliation", {}).get("state") == "reconciled",
-            "FS-004: explicit Manuscript preserve reconciliation missing",
+        return (
+            check(
+                manuscript.get("reconciliation", {}).get("state") == "reconciled",
+                "FS-004: explicit Manuscript preserve reconciliation missing",
+            )
+            and check(
+                outline.get("reconciliation", {}).get("state") == "unresolved",
+                "FS-004: unresolved impact state not retained",
+            )
         )
     finally:
         env["temp"].cleanup()
-
 
 def task_package_readiness() -> bool:
     env = _perform_reconciliation()
@@ -375,12 +428,17 @@ def task_persistence_reconstruction() -> bool:
         event = rt._artifact(fresh.dataset, "event-storm")
         scene2 = rt._artifact(fresh.dataset, "scene-002-signal-shed")
         manuscript = rt._artifact(fresh.dataset, "manuscript-scene-002")
+        outline = rt._artifact(fresh.dataset, "outline-opening")
 
         if not check(event["revision"] == env["event_change"]["to_revision"], "FS-004: accepted upstream revision not reconstructed"):
             return False
         if not check(bool(event.get("revision_history")), "FS-004: prior revision history not durable"):
             return False
+        if not check(bool(event.get("revision_acceptance_history")), "FS-004: accepted upstream revision provenance not durable"):
+            return False
         if not check(scene2.get("reconciliation", {}).get("state") == "reconciled", "FS-004: reconciliation state not durable"):
+            return False
+        if not check(outline.get("reconciliation", {}).get("state") == "unresolved", "FS-004: unresolved downstream state not reconstructed"):
             return False
         if not check(manuscript["generation_package_id"] == "historical-package-scene-002", "FS-004: historical package provenance not durable"):
             return False
@@ -391,6 +449,62 @@ def task_persistence_reconstruction() -> bool:
         )
     finally:
         env["temp"].cleanup()
+
+
+def task_replacement_reconstruction() -> bool:
+    rt = _runtime()
+    temp = tempfile.TemporaryDirectory()
+    try:
+        root = Path(temp.name)
+        _fixture(root)
+        session = rt.open_revision_session(root, authorize_transition=True)
+        candidate = session.propose_revision(
+            "event-storm",
+            {"summary": "A landslide, not a storm, severs the west telegraph span."},
+            identity_operation="replacement",
+            replacement_id="event-landslide-break",
+        )
+        change = session.accept_revision(candidate["id"])
+        impacts = {
+            item["dependent_id"]: item
+            for item in session.analyze_impact(change)
+        }
+        if not check(
+            impacts["scene-002-signal-shed"]["state"] == "superseded",
+            "FS-004: known replacement path did not classify dependency as superseded",
+        ):
+            return False
+        replacement = rt._artifact(session.dataset, "event-landslide-break")
+        if not check(
+            replacement.get("supersedes") == "event-storm",
+            "FS-004: replacement identity did not preserve supersession provenance",
+        ):
+            return False
+        if not check(
+            bool(replacement.get("revision_acceptance_history")),
+            "FS-004: replacement acceptance provenance missing",
+        ):
+            return False
+        session.persist()
+        fresh = rt.open_revision_session(root)
+        replacement = rt._artifact(fresh.dataset, "event-landslide-break")
+        scene2 = rt._artifact(fresh.dataset, "scene-002-signal-shed")
+        return (
+            check(
+                replacement.get("supersedes") == "event-storm",
+                "FS-004: replacement provenance not reconstructed",
+            )
+            and check(
+                bool(replacement.get("revision_acceptance_history")),
+                "FS-004: replacement acceptance history not reconstructed",
+            )
+            and check(
+                scene2.get("reconciliation", {}).get("state") == "superseded",
+                "FS-004: superseded downstream state not reconstructed",
+            )
+        )
+    finally:
+        temp.cleanup()
 
 
 def task_persistence_conflict() -> bool:
@@ -426,6 +540,30 @@ def task_persistence_conflict() -> bool:
         temp.cleanup()
 
 
+def task_ruleset_compatibility() -> bool:
+    identity = _json(ROOT / "ruleset" / "identity.json")
+    contract = _json(ROOT / "ruleset" / "compatibility.json")
+    template = _json(ROOT / "init-config" / "dataset.json")
+    current = contract["ruleset_binding"]["current"]
+    transitions = contract["rebinding"]["supported_transitions"]
+    has_previous = any(
+        item.get("source", {}).get("version") == "0.2.0"
+        and item.get("target") == current
+        for item in transitions
+        if isinstance(item, dict)
+    )
+    migration_target = contract["migration"]["supported_transitions"][0]["target"][
+        "ruleset_binding"
+    ]
+    return (
+        check(identity.get("version") == "0.3.0", "FS-004: Ruleset identity did not advance for new governed semantics")
+        and check(current == identity, "FS-004: compatibility current binding differs from Ruleset identity")
+        and check(template.get("ruleset_binding") == current, "FS-004: Dataset template binding is stale")
+        and check(migration_target == current, "FS-004: supported legacy migration does not land on current Ruleset")
+        and check(has_previous, "FS-004: no explicit 0.2.0 to current Ruleset rebinding path")
+    )
+
+
 def task_dataset_boundary() -> bool:
     return (
         check(not (ROOT / "dataset").exists(), "FS-004: story Dataset instance stored in Ruleset repository")
@@ -457,7 +595,9 @@ TASKS: dict[str, Callable[[], bool | None]] = {
     "fs004-impact-reconciliation": task_impact_reconciliation,
     "fs004-package-readiness": task_package_readiness,
     "fs004-persistence-reconstruction": task_persistence_reconstruction,
+    "fs004-replacement-reconstruction": task_replacement_reconstruction,
     "fs004-persistence-conflict": task_persistence_conflict,
+    "fs004-ruleset-compatibility": task_ruleset_compatibility,
     "fs004-dataset-boundary": task_dataset_boundary,
     "fs004-manifest-bindings": task_manifest_bindings,
 }
