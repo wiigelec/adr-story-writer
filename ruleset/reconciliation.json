@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "revision": {
+    "candidate_does_not_change_accepted_meaning": true,
+    "accepted_revision_requires_explicit_acceptance": true,
+    "stable_identity_preserved_for_continuing_object": true,
+    "replacement_requires_explicit_identity_change": true,
+    "ambiguous_identity_must_remain_unresolved": true,
+    "prior_revision_provenance_preserved": true
+  },
+  "impact": {
+    "material_dependency_distinct_from_historical_derivation": true,
+    "outcomes": [
+      "still_valid",
+      "review_required",
+      "superseded",
+      "unresolved"
+    ],
+    "unrelated_state_must_not_be_invalidated": true,
+    "semantic_equivalence_must_not_be_invented": true
+  },
+  "freshness": {
+    "is_not_authority_class": true,
+    "blocking_states": [
+      "review_required",
+      "stale",
+      "unresolved",
+      "superseded"
+    ],
+    "stale_state_does_not_revoke_historical_acceptance": true
+  },
+  "reconciliation": {
+    "requires_upstream_change_and_dependent_scope": true,
+    "actions": [
+      "preserve",
+      "revise",
+      "rebuild",
+      "narrow",
+      "withdraw",
+      "supersede",
+      "unresolved"
+    ],
+    "accepted_manuscript_not_directly_rewritten": true,
+    "consequential_replacement_meaning_not_invented": true
+  },
+  "generation_package": {
+    "used_package_immutable": true,
+    "materially_stale_package_cannot_govern_new_attempt": true,
+    "historical_candidate_keeps_original_package_provenance": true,
+    "current_package_requires_current_selected_revisions": true
+  },
+  "persistence": {
+    "reconciliation_state_is_durable": true,
+    "prior_revision_provenance_is_durable": true,
+    "unresolved_state_is_durable": true,
+    "save_conflict_must_fail": true
+  }
+}
