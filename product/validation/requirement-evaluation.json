@@ -420,14 +420,16 @@
       "requirement": "FS-004-NR-010",
       "tasks": [
         "fs004-reconciliation-contract",
-        "fs004-impact-reconciliation"
+        "fs004-impact-reconciliation",
+        "fs004-revision-runtime"
       ]
     },
     {
       "requirement": "FS-004-NR-011",
       "tasks": [
         "fs004-impact-reconciliation",
-        "fs004-replacement-reconstruction"
+        "fs004-replacement-reconstruction",
+        "fs004-revision-runtime"
       ]
     },
     {
@@ -539,14 +541,16 @@
         "fs004-impact-reconciliation",
         "fs004-persistence-reconstruction",
         "fs004-replacement-reconstruction",
-        "fs004-manuscript-repair"
+        "fs004-manuscript-repair",
+        "fs004-revision-runtime"
       ]
     },
     {
       "requirement": "FS-004-NR-028",
       "tasks": [
         "fs004-persistence-reconstruction",
-        "fs004-manuscript-repair"
+        "fs004-manuscript-repair",
+        "fs004-revision-runtime"
       ]
     },
     {
@@ -561,7 +565,8 @@
         "fs004-persistence-reconstruction",
         "fs004-replacement-reconstruction",
         "fs004-ruleset-compatibility",
-        "fs004-manuscript-repair"
+        "fs004-manuscript-repair",
+        "fs004-revision-runtime"
       ]
     },
     {

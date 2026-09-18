@@ -202,6 +202,44 @@ def _normalize_candidate_dependencies(
     return normalized
 
 
+def _promote_candidate_material_dependencies(
+    artifact: dict[str, Any],
+    candidate: dict[str, Any],
+) -> None:
+    declared = candidate.get("material_dependencies", [])
+    if not isinstance(declared, list):
+        raise RevisionRuntimeError("candidate material_dependencies must be an array")
+    if not declared:
+        return
+
+    relations = artifact.setdefault("dependency_relations", [])
+    if not isinstance(relations, list):
+        raise RevisionRuntimeError("dependency_relations must be an array")
+
+    for declared_relation in declared:
+        if not isinstance(declared_relation, dict):
+            raise RevisionRuntimeError("candidate dependency must be an object")
+        target_id = declared_relation.get("target_id")
+        if not isinstance(target_id, str) or not target_id:
+            raise RevisionRuntimeError("candidate dependency requires target_id")
+
+        promoted = copy.deepcopy(declared_relation)
+        promoted["material"] = True
+        promoted["authority_basis"] = "accepted"
+
+        matches = [
+            index
+            for index, relation in enumerate(relations)
+            if isinstance(relation, dict) and relation.get("target_id") == target_id
+        ]
+        if matches:
+            relations[matches[0]] = promoted
+            for index in reversed(matches[1:]):
+                del relations[index]
+        else:
+            relations.append(promoted)
+
+
 def _normalize_candidate_assumptions(
     assumptions: list[str] | None,
 ) -> list[str]:
@@ -473,6 +511,8 @@ def accept_revision(
             before_revision=old_revision,
             dependent_id=old_id,
         )
+
+    _promote_candidate_material_dependencies(result_target, candidate_snapshot)
 
     return {
         "id": _stable_id(

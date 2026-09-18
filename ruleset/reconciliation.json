@@ -15,7 +15,9 @@
     ],
     "replacement_acceptance_provenance_preserved": true,
     "candidate_records_material_dependencies_and_assumptions": true,
-    "candidate_scope_and_dependencies_are_inspectable": true
+    "candidate_scope_and_dependencies_are_inspectable": true,
+    "accepted_candidate_material_dependencies_become_current": true,
+    "accepted_dependency_same_target_replaces_not_duplicates": true
   },
   "impact": {
     "material_dependency_distinct_from_historical_derivation": true,

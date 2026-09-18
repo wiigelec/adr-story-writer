@@ -53,6 +53,17 @@ def _fixture(root: Path):
     fs003._fixture(root)
     d = root / "dataset"
 
+    events = _json(d / "canon" / "events.json")
+    for event in events:
+        if event.get("id") == "event-storm":
+            event["dependency_relations"] = [{
+                "target_id": "setting-red-hollow",
+                "target_revision": "canon-setting-r1",
+                "authority_basis": "accepted",
+                "material": False,
+            }]
+    _write(d / "canon" / "events.json", events)
+
     sequence = _json(d / "plot" / "sequence.json")
     for scene in sequence:
         if scene["id"] == "scene-001-arrival":
@@ -264,13 +275,54 @@ def task_revision_runtime() -> bool:
 
         change = session.accept_revision(candidate["id"])
         event_after = rt._artifact(session.dataset, "event-storm")
-        return (
+        promoted = [
+            relation
+            for relation in event_after.get("dependency_relations", [])
+            if isinstance(relation, dict)
+            and relation.get("target_id") == "setting-red-hollow"
+        ]
+        if not (
             check(event_after["id"] == "event-storm", "FS-004: ordinary revision changed stable semantic identity")
             and check(event_after["revision"] != accepted_before["revision"], "FS-004: accepted revision did not establish new revision identity")
             and check(event_after["authority_class"] == "accepted_semantic", "FS-004: revision changed authority class")
             and check(bool(event_after.get("revision_history")), "FS-004: prior accepted revision provenance missing")
             and check(bool(event_after.get("revision_acceptance_history")), "FS-004: revision acceptance provenance missing")
             and check(change["from_revision"] == accepted_before["revision"], "FS-004: revision change provenance missing source revision")
+            and check(len(promoted) == 1, "FS-004: accepted candidate dependency was duplicated instead of replaced")
+            and check(promoted[0].get("material") is True, "FS-004: accepted candidate material dependency did not become current")
+            and check(promoted[0].get("target_revision") == "canon-setting-r1", "FS-004: promoted dependency lost accepted target revision")
+            and check(promoted[0].get("authority_basis") == "accepted", "FS-004: promoted dependency retained candidate authority basis")
+        ):
+            return False
+
+        session.persist()
+        fresh = rt.open_revision_session(root)
+        reconstructed_event = rt._artifact(fresh.dataset, "event-storm")
+        reconstructed_relations = [
+            relation
+            for relation in reconstructed_event.get("dependency_relations", [])
+            if isinstance(relation, dict)
+            and relation.get("target_id") == "setting-red-hollow"
+        ]
+        if not check(
+            len(reconstructed_relations) == 1
+            and reconstructed_relations[0].get("material") is True,
+            "FS-004: promoted accepted dependency did not survive reconstruction",
+        ):
+            return False
+
+        setting_candidate = fresh.propose_revision(
+            "setting-red-hollow",
+            {"name": "Red Hollow Relay Station and West Span"},
+        )
+        setting_change = fresh.accept_revision(setting_candidate["id"])
+        setting_impacts = {
+            impact["dependent_id"]: impact
+            for impact in fresh.analyze_impact(setting_change)
+        }
+        return check(
+            setting_impacts.get("event-storm", {}).get("state") == "review_required",
+            "FS-004: later upstream revision could not discover the newly accepted dependency",
         )
     finally:
         temp.cleanup()
