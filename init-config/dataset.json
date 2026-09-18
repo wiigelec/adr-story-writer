@@ -6,7 +6,7 @@
   "ruleset_binding": {
     "application": "adr-story-writer",
     "component": "ruleset",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "compatibility_history": [],
   "instance": {

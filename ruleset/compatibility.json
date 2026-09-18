@@ -20,7 +20,7 @@
     "current": {
       "application": "adr-story-writer",
       "component": "ruleset",
-      "version": "0.2.0"
+      "version": "0.3.0"
     },
     "stored_with_dataset": true,
     "ordinary_save_must_not_change_binding": true,
@@ -121,7 +121,7 @@
           "ruleset_binding": {
             "application": "adr-story-writer",
             "component": "ruleset",
-            "version": "0.2.0"
+            "version": "0.3.0"
           }
         },
         "meaning_preserving": true,
@@ -172,6 +172,42 @@
           "application": "adr-story-writer",
           "component": "ruleset",
           "version": "0.2.0"
+        },
+        "semantic_revision_required": false
+      },
+      {
+        "id": "ruleset-0.1.0-to-0.3.0",
+        "schema": {
+          "id": "adr-story-writer.dataset",
+          "version": 1
+        },
+        "source": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.1.0"
+        },
+        "target": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.3.0"
+        },
+        "semantic_revision_required": false
+      },
+      {
+        "id": "ruleset-0.2.0-to-0.3.0",
+        "schema": {
+          "id": "adr-story-writer.dataset",
+          "version": 1
+        },
+        "source": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.2.0"
+        },
+        "target": {
+          "application": "adr-story-writer",
+          "component": "ruleset",
+          "version": "0.3.0"
         },
         "semantic_revision_required": false
       }
