@@ -4,6 +4,8 @@ import copy
 import importlib.util
 import json
 import re
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Callable
@@ -320,17 +322,43 @@ def task_scene_runtime() -> bool:
         contract = env["contract"]
         package = env["package"]
 
-        generator_payload = json.dumps(context["generator_visible"], ensure_ascii=False).lower()
-        reviewer_payload = json.dumps(context["reviewer_only"], ensure_ascii=False).lower()
-        if not check("dispatch satchel" not in generator_payload, "FS-003: concealed fact leaked into generator context"):
+        generator_payload = json.dumps(
+            context["generator_visible"],
+            ensure_ascii=False,
+        ).lower()
+        reviewer_payload = json.dumps(
+            context["reviewer_only"],
+            ensure_ascii=False,
+        ).lower()
+        if not check(
+            "dispatch satchel" not in generator_payload,
+            "FS-003: concealed fact leaked into generator context",
+        ):
             return False
-        if not check("does_not_know" not in generator_payload, "FS-003: negative viewpoint knowledge leaked into generator context"):
+        if not check(
+            "does_not_know" not in generator_payload,
+            "FS-003: negative viewpoint knowledge leaked into generator context",
+        ):
             return False
-        if not check("dispatch satchel" in reviewer_payload, "FS-003: reviewer-only concealed fact missing"):
+        if not check(
+            "dispatch satchel" in reviewer_payload,
+            "FS-003: reviewer-only concealed fact missing",
+        ):
             return False
-        if not check(contract["stop_boundary"] == "Mara decides to inspect the west span.", "FS-003: explicit stop boundary missing"):
+        if not check(
+            contract["stop_boundary"] == "Mara decides to inspect the west span.",
+            "FS-003: explicit stop boundary missing",
+        ):
             return False
-        if not check(package["target_scope"] == "scene-002-signal-shed", "FS-003: package target incorrect"):
+        if not check(
+            contract["reveal_concealment"]["reviewer_only"],
+            "FS-003: contract omitted reviewer-only concealment constraints",
+        ):
+            return False
+        if not check(
+            package["target_scope"] == "scene-002-signal-shed",
+            "FS-003: package target incorrect",
+        ):
             return False
         if not check(
             package == rt.build_generation_package(copy.deepcopy(contract)),
@@ -338,9 +366,30 @@ def task_scene_runtime() -> bool:
         ):
             return False
 
+        selected = package["selected_revisions"]
+        if not check(
+            selected["prose_controls"]["beats"].get("beats-scene-002")
+            == "prose-beats-002-r1",
+            "FS-003: Beat revision missing from package provenance",
+        ):
+            return False
+        if not check(
+            selected["prose_controls"]["modes"].get("mode-close-third-mara")
+            == "prose-mode-r1",
+            "FS-003: Mode revision missing from package provenance",
+        ):
+            return False
+        if not check(
+            selected["prior_manuscript"].get("manuscript-scene-001")
+            == "manuscript-scene-001-r1",
+            "FS-003: prior Manuscript revision missing from package provenance",
+        ):
+            return False
+
         broken = copy.deepcopy(env["session"].dataset)
         broken["canon"]["events"] = [
-            event for event in broken["canon"]["events"]
+            event
+            for event in broken["canon"]["events"]
             if event.get("id") != "event-storm"
         ]
         try:
@@ -348,11 +397,100 @@ def task_scene_runtime() -> bool:
         except rt.SceneNotReadyError:
             pass
         else:
-            return check(False, "FS-003: missing material context was guessed instead of refused")
+            return check(
+                False,
+                "FS-003: missing material context was guessed instead of refused",
+            )
+
+        unknown_authority = copy.deepcopy(env["session"].dataset)
+        for event in unknown_authority["canon"]["events"]:
+            if event.get("id") == "event-storm":
+                event.pop("authority_class", None)
+        try:
+            rt.project_scene_context(
+                unknown_authority,
+                "scene-002-signal-shed",
+            )
+        except rt.SceneNotReadyError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: missing authority was inferred as accepted",
+            )
+
+        unapproved_prose = copy.deepcopy(env["session"].dataset)
+        unapproved_prose["prose"]["beats"]["scene-002-signal-shed"][
+            "authority_class"
+        ] = "production_candidate"
+        try:
+            rt.project_scene_context(
+                unapproved_prose,
+                "scene-002-signal-shed",
+            )
+        except rt.SceneNotReadyError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: non-approved Prose control governed generation",
+            )
+
+        candidate_dependency = copy.deepcopy(env["session"].dataset)
+        for event in candidate_dependency["canon"]["events"]:
+            if event.get("id") == "event-storm":
+                event["authority_class"] = "candidate_semantic"
+        candidate_contract = rt.build_production_contract(
+            candidate_dependency,
+            "scene-002-signal-shed",
+        )
+        candidate_package = rt.build_generation_package(candidate_contract)
+        candidate_text = rt.create_candidate(
+            candidate_package,
+            "Mara tests the relay and follows the evidence west.",
+            40,
+        )
+        rt.review_candidate(candidate_text, candidate_package)
+        try:
+            rt.accept_candidate(candidate_text, candidate_package)
+        except rt.AcceptanceError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: candidate semantic dependency bypassed acceptance closure",
+            )
+
+        candidate_target = copy.deepcopy(env["session"].dataset)
+        for scene in candidate_target["plot"]["sequence"]:
+            if scene.get("id") == "scene-002-signal-shed":
+                scene["authority_class"] = "candidate_semantic"
+        candidate_target_package = rt.build_generation_package(
+            rt.build_production_contract(
+                candidate_target,
+                "scene-002-signal-shed",
+            )
+        )
+        target_attempt = rt.create_candidate(
+            candidate_target_package,
+            "Mara tests the relay and follows the evidence west.",
+            41,
+        )
+        rt.review_candidate(target_attempt, candidate_target_package)
+        try:
+            rt.accept_candidate(target_attempt, candidate_target_package)
+        except rt.AcceptanceError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: candidate target Plot scope bypassed acceptance closure",
+            )
 
         bad = rt.create_candidate(
             package,
-            "Mara saw the loose board and somehow understood that Eli had hidden a sealed railway dispatch satchel beneath it.",
+            "Mara saw the loose board and somehow understood that Eli had hidden "
+            "a sealed railway dispatch satchel beneath it.",
             1,
         )
         review = rt.review_candidate(
@@ -364,9 +502,15 @@ def task_scene_runtime() -> bool:
                 "detail": "Candidate reveals reviewer-only dispatch satchel.",
             }],
         )
-        if not check(review["outcome"] == "non_conforming", "FS-003: violating candidate not rejected"):
+        if not check(
+            review["outcome"] == "non_conforming",
+            "FS-003: violating candidate not rejected",
+        ):
             return False
-        if not check(bad["authority_class"] == "candidate_manuscript", "FS-003: rejected candidate authority changed"):
+        if not check(
+            bad["authority_class"] == "candidate_manuscript",
+            "FS-003: rejected candidate authority changed",
+        ):
             return False
         try:
             rt.accept_candidate(bad, package)
@@ -375,7 +519,11 @@ def task_scene_runtime() -> bool:
         else:
             return check(False, "FS-003: non-conforming candidate was accepted")
 
-        indeterminate = rt.create_candidate(package, "Mara tests the relay.", 2)
+        indeterminate = rt.create_candidate(
+            package,
+            "Mara tests the relay.",
+            2,
+        )
         rt.review_candidate(indeterminate, package, indeterminate=True)
         try:
             rt.accept_candidate(indeterminate, package)
@@ -384,28 +532,81 @@ def task_scene_runtime() -> bool:
         else:
             return check(False, "FS-003: indeterminate candidate was accepted")
 
+        unresolved = rt.create_candidate(
+            package,
+            "Mara tests the relay and makes a new consequential inference.",
+            3,
+        )
+        rt.review_candidate(
+            unresolved,
+            package,
+            unresolved_consequential_dependencies=[{
+                "id": "candidate-new-motive",
+                "owning_surface": "canon",
+                "material": True,
+            }],
+        )
+        try:
+            rt.accept_candidate(unresolved, package)
+        except rt.AcceptanceError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: unresolved consequential invention bypassed acceptance closure",
+            )
+
+        tampered = copy.deepcopy(package)
+        tampered["stop_boundary"] = "A different stopping boundary."
+        try:
+            rt.create_candidate(
+                tampered,
+                "Mara tests the relay.",
+                4,
+            )
+        except rt.SceneRuntimeError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: mutated frozen package governed a generation attempt",
+            )
+
         good = rt.create_candidate(
             package,
-            "Mara tested the relay until its armature clicked cleanly. The fault lay farther west. "
-            "When she shifted her knee she noticed one floorboard had cleaner edges than its neighbors, "
-            "an oddity she filed away while Eli pointed toward the storm-hit span. "
-            "The line fault was the stronger lead, so she packed her meter and followed him outside.",
-            3,
+            "Mara tested the relay until its armature clicked cleanly. "
+            "The fault lay farther west. When she shifted her knee she noticed "
+            "one floorboard had cleaner edges than its neighbors, an oddity she "
+            "filed away while Eli pointed toward the storm-hit span. The line "
+            "fault was the stronger lead, so she packed her meter and followed "
+            "him outside.",
+            5,
         )
         rt.review_candidate(good, package)
         accepted = rt.accept_candidate(good, package)
-        if not check(accepted["authority_class"] == "accepted_manuscript", "FS-003: conforming candidate not accepted"):
+        if not check(
+            accepted["authority_class"] == "accepted_manuscript",
+            "FS-003: conforming candidate not accepted",
+        ):
             return False
         if not check(
-            not (env["root"] / "dataset" / "chapters" / "002-scene-002-signal-shed.md").exists(),
+            accepted["generation_provenance"]["package_snapshot"] == package,
+            "FS-003: accepted candidate lost frozen package provenance",
+        ):
+            return False
+        if not check(
+            not (
+                env["root"]
+                / "dataset"
+                / "chapters"
+                / "002-scene-002-signal-shed.md"
+            ).exists(),
             "FS-003: acceptance incorrectly implied persistence",
         ):
             return False
-        env["accepted"] = accepted
         return True
     finally:
         temp.cleanup()
-
 
 def task_persistence_reconstruction() -> bool:
     temp, env = _exercise()
@@ -415,43 +616,208 @@ def task_persistence_reconstruction() -> bool:
         package = env["package"]
         good = rt.create_candidate(
             package,
-            "Mara proved the relay worked locally, noticed the clean edge of one floorboard, "
-            "and chose to inspect the west span because the diagnostic evidence pointed there.",
-            2,
+            "Mara proved the relay worked locally, noticed the clean edge of one "
+            "floorboard, and chose to inspect the west span because the "
+            "diagnostic evidence pointed there.",
+            20,
         )
         rt.review_candidate(good, package)
         accepted = rt.accept_candidate(good, package)
         session.persist_accepted(accepted)
 
-        chapter_path = env["root"] / "dataset" / "chapters" / "002-scene-002-signal-shed.md"
-        if not check(chapter_path.is_file(), "FS-003: accepted Manuscript was not persisted"):
+        chapter_path = (
+            env["root"]
+            / "dataset"
+            / "chapters"
+            / "002-scene-002-signal-shed.md"
+        )
+        if not check(
+            chapter_path.is_file(),
+            "FS-003: accepted Manuscript was not persisted",
+        ):
             return False
-        if not check((env["root"] / "dataset" / "schema.json").is_file(), "FS-003: migrated schema identity was not persisted"):
+        if not check(
+            (env["root"] / "dataset" / "schema.json").is_file(),
+            "FS-003: migrated schema identity was not persisted",
+        ):
             return False
-        if not check((env["root"] / "dataset" / "ruleset-binding.json").is_file(), "FS-003: migrated Ruleset binding was not persisted"):
+        if not check(
+            (env["root"] / "dataset" / "ruleset-binding.json").is_file(),
+            "FS-003: migrated Ruleset binding was not persisted",
+        ):
             return False
 
-        # Fresh runtime: no object/session state is reused.
-        fresh = rt.open_scene_session(env["root"])
-        accepted_entries = [
-            entry for entry in fresh.dataset["chapters"]["files"]
-            if entry.get("plot_scope") == "scene-002-signal-shed"
-        ]
-        if not check(len(accepted_entries) == 1, "FS-003: fresh session did not reconstruct accepted scene"):
+        child_code = r"""
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+runtime_path = Path(sys.argv[1])
+root = Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("fs003_child_runtime", runtime_path)
+if spec is None or spec.loader is None:
+    raise SystemExit("cannot load runtime")
+rt = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(rt)
+
+session = rt.open_scene_session(root)
+entries = [
+    entry
+    for entry in session.dataset["chapters"]["files"]
+    if entry.get("plot_scope") == "scene-002-signal-shed"
+]
+context = session.context("scene-002-signal-shed")
+next_scene = session.next_scene("scene-002-signal-shed")
+next_context = session.context("scene-003-first-message")
+entry = entries[0] if len(entries) == 1 else {}
+print(json.dumps({
+    "accepted_count": len(entries),
+    "authority_class": entry.get("authority_class"),
+    "generation_package_id": entry.get("generation_package_id"),
+    "package_digest": (
+        entry.get("generation_provenance", {}).get("package_digest")
+    ),
+    "selected_revisions": (
+        entry.get("generation_provenance", {}).get("selected_revisions")
+    ),
+    "package_snapshot_target": (
+        entry.get("generation_provenance", {})
+        .get("package_snapshot", {})
+        .get("target_scope")
+    ),
+    "current_target_count": len(
+        context["generator_visible"]["current_target_manuscript"]
+    ),
+    "current_target_has_provenance": (
+        bool(context["generator_visible"]["current_target_manuscript"])
+        and "generation_provenance"
+        in context["generator_visible"]["current_target_manuscript"][0]
+    ),
+    "next_scene": next_scene.get("id") if next_scene else None,
+    "next_context": next_context.get("target_scope"),
+    "next_generator_contains_satchel": (
+        "dispatch satchel"
+        in json.dumps(
+            next_context["generator_visible"],
+            ensure_ascii=False,
+        ).lower()
+    ),
+    "next_prior_manuscript_contains_provenance": any(
+        "generation_provenance" in item or "review" in item
+        for item in next_context["generator_visible"]["accepted_prior_manuscript"]
+    ),
+    "next_prior_plot_dependency_contains_purpose": any(
+        item.get("surface") == "plot.sequence" and "purpose" in item
+        for item in next_context["generator_visible"]["accepted_dependencies"]
+    ),
+}))
+"""
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                child_code,
+                str(ROOT / "product" / "src" / "scene_runtime.py"),
+                str(env["root"]),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if not check(
+            completed.returncode == 0,
+            f"FS-003: fresh-process reconstruction failed: {completed.stderr}",
+        ):
             return False
-        entry = accepted_entries[0]
-        if not check(entry.get("authority_class") == "accepted_manuscript", "FS-003: Manuscript acceptance lost after restart"):
+        reconstructed = json.loads(completed.stdout)
+        if not check(
+            reconstructed["accepted_count"] == 1,
+            "FS-003: fresh process did not reconstruct accepted scene",
+        ):
             return False
-        if not check(entry.get("generation_package_id") == package["id"], "FS-003: generation provenance lost after restart"):
+        if not check(
+            reconstructed["authority_class"] == "accepted_manuscript",
+            "FS-003: Manuscript acceptance lost after process restart",
+        ):
             return False
-        next_scene = fresh.next_scene("scene-002-signal-shed")
-        if not check(next_scene and next_scene.get("id") == "scene-003-first-message", "FS-003: next scene continuation failed"):
+        if not check(
+            reconstructed["generation_package_id"] == package["id"],
+            "FS-003: generation package identity lost after process restart",
+        ):
             return False
-        next_context = fresh.context("scene-003-first-message")
-        return check(next_context["target_scope"] == "scene-003-first-message", "FS-003: next scene could not be prepared")
+        if not check(
+            reconstructed["package_digest"]
+            == package["provenance"]["package_digest"],
+            "FS-003: generation package digest lost after process restart",
+        ):
+            return False
+        if not check(
+            reconstructed["selected_revisions"] == package["selected_revisions"],
+            "FS-003: selected revision provenance lost after process restart",
+        ):
+            return False
+        if not check(
+            reconstructed["package_snapshot_target"]
+            == "scene-002-signal-shed",
+            "FS-003: frozen package context was not durably reconstructable",
+        ):
+            return False
+        if not check(
+            reconstructed["current_target_count"] == 1,
+            "FS-003: current target Manuscript missing from reconstructed projection",
+        ):
+            return False
+        if not check(
+            reconstructed["current_target_has_provenance"] is False,
+            "FS-003: Manuscript provenance leaked reviewer-only state into generator context",
+        ):
+            return False
+        if not check(
+            reconstructed["next_generator_contains_satchel"] is False,
+            "FS-003: prior governed context leaked concealed Canon into next scene",
+        ):
+            return False
+        if not check(
+            reconstructed["next_prior_manuscript_contains_provenance"] is False,
+            "FS-003: prior Manuscript exposed review/provenance to generation",
+        ):
+            return False
+        if not check(
+            reconstructed["next_prior_plot_dependency_contains_purpose"] is False,
+            "FS-003: prior Plot dependency exposed reviewer-facing purpose text",
+        ):
+            return False
+        if not check(
+            reconstructed["next_scene"] == "scene-003-first-message",
+            "FS-003: next scene continuation failed after process restart",
+        ):
+            return False
+        if not check(
+            reconstructed["next_context"] == "scene-003-first-message",
+            "FS-003: next scene could not be prepared after process restart",
+        ):
+            return False
+
+        # After a successful save the session has a new baseline. A later
+        # external change must make the next save fail rather than overwrite it.
+        story_path = env["root"] / "dataset" / "story.json"
+        story = json.loads(story_path.read_text(encoding="utf-8"))
+        story["external_change_marker"] = True
+        _write_json(story_path, story)
+        try:
+            session.persist_accepted(accepted)
+        except rt.PersistenceConflictError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-003: stale session overwrote newer persisted Dataset state",
+            )
+
+        return True
     finally:
         temp.cleanup()
-
 
 def task_dataset_boundary() -> bool:
     return (

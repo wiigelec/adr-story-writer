@@ -30,6 +30,10 @@ class AcceptanceError(SceneRuntimeError):
     pass
 
 
+class PersistenceConflictError(SceneRuntimeError):
+    pass
+
+
 def _load_compatibility_module():
     path = Path(__file__).resolve().with_name("compatibility.py")
     spec = importlib.util.spec_from_file_location("story_writer_compatibility", path)
@@ -194,8 +198,21 @@ class TreeDatasetBackend:
             if key in dataset:
                 _write_json(target / rel, dataset[key])
 
-    def save(self, dataset: dict[str, Any]) -> None:
-        """Replace the complete Dataset tree as one logical save with rollback."""
+    def digest(self) -> str:
+        """Return a logical digest of the currently persisted Dataset tree."""
+        return hashlib.sha256(_canonical(self.load())).hexdigest()
+
+    def save(self, dataset: dict[str, Any], *, expected_digest: str) -> str:
+        """Replace the complete Dataset tree as one logical save with rollback.
+
+        Refuse the save when persisted state has changed since the session loaded.
+        """
+        current_digest = self.digest()
+        if current_digest != expected_digest:
+            raise PersistenceConflictError(
+                "persisted Dataset changed after session reconstruction"
+            )
+
         parent = self.dataset_root.parent
         parent.mkdir(parents=True, exist_ok=True)
         stage = Path(tempfile.mkdtemp(prefix=".dataset-stage-", dir=parent))
@@ -220,6 +237,7 @@ class TreeDatasetBackend:
             if stage.exists():
                 shutil.rmtree(stage, ignore_errors=True)
             raise
+        return self.digest()
 
 
 def _iter_artifacts(dataset: dict[str, Any]):
@@ -287,16 +305,26 @@ def _prose_for_scene(dataset: dict[str, Any], scene_id: str) -> dict[str, list[d
     for name in result:
         collection = prose.get(name, {})
         if not isinstance(collection, dict):
-            continue
+            raise SceneNotReadyError(f"prose.{name} must be an object")
         for artifact in collection.values():
             if not isinstance(artifact, dict):
-                continue
+                raise SceneNotReadyError(f"prose.{name} contains a non-object artifact")
             target = artifact.get("target_scope")
-            # Persistent mode guidance without a target applies generally.
-            if target == scene_id or (name == "modes" and target is None):
-                result[name].append(copy.deepcopy(artifact))
+            applicable = target == scene_id or (name == "modes" and target is None)
+            if not applicable:
+                continue
+            if artifact.get("authority_class") != "production_approved":
+                raise SceneNotReadyError(
+                    f"{scene_id}: applicable {name} control {artifact.get('id')} "
+                    "is not production_approved"
+                )
+            if not isinstance(artifact.get("revision"), str) or not artifact["revision"]:
+                raise SceneNotReadyError(
+                    f"{scene_id}: applicable {name} control {artifact.get('id')} "
+                    "has no durable revision"
+                )
+            result[name].append(copy.deepcopy(artifact))
     return result
-
 
 def _hidden_dependency_ids(scene: dict[str, Any], index: dict[str, dict[str, Any]]) -> set[str]:
     hidden: set[str] = set()
@@ -319,8 +347,55 @@ def _hidden_dependency_ids(scene: dict[str, Any], index: dict[str, dict[str, Any
     return hidden
 
 
+def _authority_basis(artifact: dict[str, Any], *, context: str) -> str:
+    authority = artifact.get("authority_class")
+    revision = artifact.get("revision")
+    if not isinstance(revision, str) or not revision:
+        raise SceneNotReadyError(f"{context}: governed artifact lacks durable revision")
+    if authority in {"accepted_semantic", "accepted_manuscript", "production_approved"}:
+        return "accepted"
+    if authority in {"candidate_semantic", "candidate_manuscript", "production_candidate"}:
+        return "candidate"
+    raise SceneNotReadyError(
+        f"{context}: unresolved or unsupported authority_class {authority!r}"
+    )
+
+
+def _revision_map(artifacts: list[dict[str, Any]]) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for artifact in artifacts:
+        artifact_id = artifact.get("id")
+        revision = artifact.get("revision")
+        if isinstance(artifact_id, str) and isinstance(revision, str):
+            result[artifact_id] = revision
+    return result
+
+
 def _generator_artifact(artifact: dict[str, Any], viewpoint_id: str) -> dict[str, Any]:
     value = copy.deepcopy(artifact)
+    # A prior Plot scene may itself contain reviewer-facing purpose or concealment
+    # wording. Downstream generation gets only the reader-safe dramatic surface;
+    # accepted prior Manuscript supplies reader-facing continuity.
+    if value.get("surface") == "plot.sequence":
+        keep = (
+            "id",
+            "surface",
+            "authority_class",
+            "revision",
+            "ordinal",
+            "viewpoint",
+            "entry",
+            "exit",
+            "required_movements",
+        )
+        safe = {key: copy.deepcopy(value[key]) for key in keep if key in value}
+        reader = value.get("reader_information", {})
+        if isinstance(reader, dict) and isinstance(reader.get("may_reveal"), list):
+            safe["reader_information"] = {
+                "may_reveal": copy.deepcopy(reader["may_reveal"])
+            }
+        return safe
+
     # The active viewpoint may expose positively authorized knowledge, but
     # negative/private epistemic fields can themselves name concealed facts.
     value.pop("does_not_know", None)
@@ -347,6 +422,19 @@ def _generator_scene(scene: dict[str, Any], visible_dependency_ids: list[str]) -
     return value
 
 
+def _generator_manuscript(entry: dict[str, Any]) -> dict[str, Any]:
+    keep = (
+        "id",
+        "surface",
+        "authority_class",
+        "revision",
+        "ordinal",
+        "plot_scope",
+        "content",
+    )
+    return {key: copy.deepcopy(entry[key]) for key in keep if key in entry}
+
+
 def _generator_prose(prose: dict[str, list[dict[str, Any]]]) -> dict[str, list[dict[str, Any]]]:
     value = copy.deepcopy(prose)
     for beat in value.get("beats", []):
@@ -361,6 +449,10 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     for field in ("id", "revision", "viewpoint", "entry", "exit"):
         if not scene.get(field):
             raise SceneNotReadyError(f"{scene_id}: missing required scene field {field}")
+    scene_authority_basis = _authority_basis(
+        scene,
+        context=f"{scene_id}: target scene",
+    )
 
     dependencies = scene.get("dependencies")
     if not isinstance(dependencies, list):
@@ -369,14 +461,20 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     if missing:
         raise SceneNotReadyError(f"{scene_id}: unresolved dependencies: {missing}")
 
+    for dep_id in dependencies:
+        _authority_basis(index[dep_id], context=f"{scene_id}: dependency {dep_id}")
+
     viewpoint_id = scene["viewpoint"]
     viewpoint = index.get(viewpoint_id)
     if not isinstance(viewpoint, dict):
         raise SceneNotReadyError(f"{scene_id}: unresolved viewpoint {viewpoint_id}")
+    _authority_basis(viewpoint, context=f"{scene_id}: viewpoint {viewpoint_id}")
 
     prose = _prose_for_scene(dataset, scene_id)
     if not prose["beats"] or not prose["modes"]:
-        raise SceneNotReadyError(f"{scene_id}: production-approved beats and mode are required")
+        raise SceneNotReadyError(
+            f"{scene_id}: production-approved beats and mode are required"
+        )
 
     hidden_ids = _hidden_dependency_ids(scene, index)
     visible_dependency_ids = [dep for dep in dependencies if dep not in hidden_ids]
@@ -390,18 +488,27 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     generator_scene = _generator_scene(scene, visible_dependency_ids)
     viewpoint_visible = _generator_artifact(viewpoint, viewpoint_id)
 
-    prior_manuscript = []
+    prior_manuscript: list[dict[str, Any]] = []
+    current_target_manuscript: list[dict[str, Any]] = []
     scene_ordinal = scene.get("ordinal")
     chapters = dataset.get("chapters", {}).get("files", [])
     if isinstance(scene_ordinal, int) and isinstance(chapters, list):
-        prior_manuscript = [
-            copy.deepcopy(ch)
-            for ch in chapters
-            if isinstance(ch, dict)
-            and ch.get("authority_class") == "accepted_manuscript"
-            and isinstance(ch.get("ordinal"), int)
-            and ch["ordinal"] < scene_ordinal
-        ]
+        for chapter in chapters:
+            if not isinstance(chapter, dict):
+                raise SceneNotReadyError("chapter manifest contains a non-object entry")
+            if chapter.get("authority_class") != "accepted_manuscript":
+                continue
+            _authority_basis(
+                chapter,
+                context=f"{scene_id}: Manuscript {chapter.get('id')}",
+            )
+            if chapter.get("plot_scope") == scene_id:
+                current_target_manuscript.append(_generator_manuscript(chapter))
+            elif (
+                isinstance(chapter.get("ordinal"), int)
+                and chapter["ordinal"] < scene_ordinal
+            ):
+                prior_manuscript.append(_generator_manuscript(chapter))
 
     protected_material = [
         item
@@ -423,10 +530,9 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         "accepted_dependencies": visible_dependencies,
         "prose_guidance": _generator_prose(prose),
         "accepted_prior_manuscript": prior_manuscript,
+        "current_target_manuscript": current_target_manuscript,
     }
 
-    # A hidden semantic payload must not be present in the generator projection.
-    hidden_payload = json.dumps(hidden_dependencies, ensure_ascii=False).lower()
     generator_payload = json.dumps(generator, ensure_ascii=False).lower()
     for hidden in hidden_dependencies:
         summary = hidden.get("summary")
@@ -436,11 +542,18 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     return {
         "target_scope": scene_id,
         "scene_revision": scene["revision"],
+        "scene_authority_basis": scene_authority_basis,
         "generator_visible": generator,
         "reviewer_only": reviewer,
         "hidden_dependency_ids": sorted(hidden_ids),
+        "prose_control_revisions": {
+            name: _revision_map(artifacts) for name, artifacts in prose.items()
+        },
+        "prior_manuscript_revisions": _revision_map(prior_manuscript),
+        "current_target_manuscript_revisions": _revision_map(
+            current_target_manuscript
+        ),
     }
-
 
 def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[str, Any]:
     projection = project_scene_context(dataset, scene_id)
@@ -454,15 +567,18 @@ def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[st
         artifact = all_deps[dep_id]
         dep = {
             "target_id": dep_id,
-            "target_revision": artifact.get("revision"),
-            "authority_basis": (
-                "candidate"
-                if str(artifact.get("authority_class", "")).startswith("candidate")
-                else "accepted"
+            "target_revision": artifact["revision"],
+            "authority_basis": _authority_basis(
+                artifact,
+                context=f"{scene_id}: dependency {dep_id}",
             ),
             "material": True,
         }
-        (candidate_dependencies if dep["authority_basis"] == "candidate" else accepted_dependencies).append(dep)
+        (
+            candidate_dependencies
+            if dep["authority_basis"] == "candidate"
+            else accepted_dependencies
+        ).append(dep)
 
     protected = copy.deepcopy(
         projection["reviewer_only"].get("protected_material", [])
@@ -491,7 +607,14 @@ def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[st
                 projection["generator_visible"]["viewpoint"].get("knowledge", [])
             ),
         },
-        "reveal_concealment": copy.deepcopy(scene.get("reader_information", {})),
+        "reveal_concealment": {
+            "generator_visible": copy.deepcopy(
+                scene.get("reader_information", {})
+            ),
+            "reviewer_only": copy.deepcopy(
+                projection["reviewer_only"].get("must_conceal", [])
+            ),
+        },
         "entry_exit_conditions": {"entry": scene["entry"], "exit": scene["exit"]},
         "prose_guidance": copy.deepcopy(prose),
         "style_voice": copy.deepcopy(
@@ -510,24 +633,31 @@ def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[st
         ],
         "accepted_dependencies": accepted_dependencies,
         "candidate_dependencies": candidate_dependencies,
+        "target_authority_basis": projection["scene_authority_basis"],
         "context_projection": projection,
     }
 
-
 def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
+    projection = contract["context_projection"]
     selected_revisions = {
-        "scene": contract["context_projection"]["scene_revision"],
+        "scene": projection["scene_revision"],
         "dependencies": {
             dep["target_id"]: dep["target_revision"]
-            for dep in contract["accepted_dependencies"] + contract["candidate_dependencies"]
+            for dep in contract["accepted_dependencies"]
+            + contract["candidate_dependencies"]
         },
+        "prose_controls": copy.deepcopy(projection["prose_control_revisions"]),
+        "prior_manuscript": copy.deepcopy(projection["prior_manuscript_revisions"]),
+        "current_target_manuscript": copy.deepcopy(
+            projection["current_target_manuscript_revisions"]
+        ),
     }
     seed = {
         "contract_id": contract["id"],
         "target_scope": contract["target_scope"],
         "selected_revisions": selected_revisions,
-        "generator_visible_context": contract["context_projection"]["generator_visible"],
-        "reviewer_only_constraints": contract["context_projection"]["reviewer_only"],
+        "generator_visible_context": projection["generator_visible"],
+        "reviewer_only_constraints": projection["reviewer_only"],
         "stop_boundary": contract["stop_boundary"],
     }
     package = {
@@ -537,14 +667,17 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
         "stop_boundary": contract["stop_boundary"],
         "selected_revisions": selected_revisions,
         "creative_allowance": copy.deepcopy(contract["creative_allowance"]),
-        "prohibited_invention": copy.deepcopy(contract["prohibited_consequential_invention"]),
+        "prohibited_invention": copy.deepcopy(
+            contract["prohibited_consequential_invention"]
+        ),
         "generator_visible_context": copy.deepcopy(
-            contract["context_projection"]["generator_visible"]
+            projection["generator_visible"]
         ),
         "reviewer_only_constraints": copy.deepcopy(
-            contract["context_projection"]["reviewer_only"]
+            projection["reviewer_only"]
         ),
         "candidate_dependencies": copy.deepcopy(contract["candidate_dependencies"]),
+        "target_authority_basis": contract["target_authority_basis"],
         "provenance": {
             "contract_id": contract["id"],
             "package_digest": None,
@@ -558,7 +691,18 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
     return package
 
 
+def _verify_package_digest(package: dict[str, Any]) -> None:
+    expected = package.get("provenance", {}).get("package_digest")
+    if not isinstance(expected, str) or not expected:
+        raise SceneRuntimeError("generation package has no stable digest")
+    digest_source = copy.deepcopy(package)
+    digest_source["provenance"]["package_digest"] = None
+    observed = hashlib.sha256(_canonical(digest_source)).hexdigest()
+    if observed != expected:
+        raise SceneRuntimeError("generation package changed after it was frozen")
+
 def create_candidate(package: dict[str, Any], text: str, attempt: int) -> dict[str, Any]:
+    _verify_package_digest(package)
     if not isinstance(text, str) or not text.strip():
         raise SceneRuntimeError("candidate text must be non-empty")
     seed = {
@@ -574,7 +718,13 @@ def create_candidate(package: dict[str, Any], text: str, attempt: int) -> dict[s
         "revision": revision,
         "target_scope": package["target_scope"],
         "generation_package_id": package["id"],
-        "generation_provenance": copy.deepcopy(package["provenance"]),
+        "generation_provenance": {
+            "package_id": package["id"],
+            "contract_id": package["contract_id"],
+            "package_digest": package["provenance"]["package_digest"],
+            "selected_revisions": copy.deepcopy(package["selected_revisions"]),
+            "package_snapshot": copy.deepcopy(package),
+        },
         "attempt": attempt,
         "text": text,
         "review": None,
@@ -587,10 +737,20 @@ def review_candidate(
     findings: list[dict[str, Any]] | None = None,
     *,
     indeterminate: bool = False,
+    unresolved_consequential_dependencies: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    _verify_package_digest(package)
     if candidate.get("generation_package_id") != package.get("id"):
         raise SceneRuntimeError("candidate/package provenance mismatch")
+    snapshot = (
+        candidate.get("generation_provenance", {})
+        .get("package_snapshot")
+    )
+    if snapshot != package:
+        raise SceneRuntimeError("candidate was not governed by this frozen package")
+
     findings = copy.deepcopy(findings or [])
+    unresolved = copy.deepcopy(unresolved_consequential_dependencies or [])
     if indeterminate:
         outcome = "indeterminate"
     elif any(bool(f.get("material", True)) for f in findings):
@@ -602,17 +762,31 @@ def review_candidate(
         "candidate_id": candidate["id"],
         "package_id": package["id"],
         "findings": findings,
+        "unresolved_consequential_dependencies": unresolved,
     }
     candidate["review"] = copy.deepcopy(review)
     return review
 
 
 def accept_candidate(candidate: dict[str, Any], package: dict[str, Any]) -> dict[str, Any]:
+    _verify_package_digest(package)
     review = candidate.get("review")
     if not isinstance(review, dict) or review.get("outcome") != "conforming":
-        raise AcceptanceError("candidate requires a conforming review before Manuscript acceptance")
+        raise AcceptanceError(
+            "candidate requires a conforming review before Manuscript acceptance"
+        )
+    if package.get("target_authority_basis") != "accepted":
+        raise AcceptanceError(
+            "candidate target Plot scope blocks Manuscript acceptance"
+        )
     if package.get("candidate_dependencies"):
-        raise AcceptanceError("material candidate dependencies block Manuscript acceptance")
+        raise AcceptanceError(
+            "material candidate dependencies block Manuscript acceptance"
+        )
+    if review.get("unresolved_consequential_dependencies"):
+        raise AcceptanceError(
+            "acceptance closure is incomplete for consequential candidate meaning"
+        )
     accepted = copy.deepcopy(candidate)
     accepted["authority_class"] = "accepted_manuscript"
     accepted["accepted_from_candidate"] = candidate["id"]
@@ -622,17 +796,18 @@ def accept_candidate(candidate: dict[str, Any], package: dict[str, Any]) -> dict
     )
     return accepted
 
-
 class SceneSession:
     def __init__(
         self,
         backend: TreeDatasetBackend,
         dataset: dict[str, Any],
         compatibility_status: dict[str, Any],
+        baseline_digest: str,
     ):
         self.backend = backend
         self.dataset = dataset
         self.compatibility_status = compatibility_status
+        self.baseline_digest = baseline_digest
 
     def context(self, scene_id: str) -> dict[str, Any]:
         return project_scene_context(self.dataset, scene_id)
@@ -645,16 +820,24 @@ class SceneSession:
 
     def persist_accepted(self, accepted: dict[str, Any]) -> None:
         if accepted.get("authority_class") != "accepted_manuscript":
-            raise AcceptanceError("only accepted Manuscript state may be persisted by this operation")
+            raise AcceptanceError(
+                "only accepted Manuscript state may be persisted by this operation"
+            )
         scene = _scene_by_id(self.dataset, accepted["target_scope"])
         ordinal = scene.get("ordinal")
         if not isinstance(ordinal, int):
-            raise SceneRuntimeError("target scene requires ordinal for Manuscript persistence")
+            raise SceneRuntimeError(
+                "target scene requires ordinal for Manuscript persistence"
+            )
 
         updated = copy.deepcopy(self.dataset)
         files = updated["chapters"]["files"]
         existing = next(
-            (entry for entry in files if entry.get("plot_scope") == accepted["target_scope"]),
+            (
+                entry
+                for entry in files
+                if entry.get("plot_scope") == accepted["target_scope"]
+            ),
             None,
         )
         record = {
@@ -666,7 +849,9 @@ class SceneSession:
             "plot_scope": accepted["target_scope"],
             "path": f"chapters/{ordinal:03d}-{accepted['target_scope']}.md",
             "generation_package_id": accepted["generation_package_id"],
-            "generation_provenance": copy.deepcopy(accepted["generation_provenance"]),
+            "generation_provenance": copy.deepcopy(
+                accepted["generation_provenance"]
+            ),
             "review": copy.deepcopy(accepted["review"]),
             "accepted_from_candidate": accepted["accepted_from_candidate"],
             "content": accepted["text"],
@@ -677,7 +862,10 @@ class SceneSession:
             files[files.index(existing)] = record
         files.sort(key=lambda entry: entry.get("ordinal", 0))
 
-        self.backend.save(updated)
+        self.baseline_digest = self.backend.save(
+            updated,
+            expected_digest=self.baseline_digest,
+        )
         self.dataset = updated
 
     def next_scene(self, after_scene_id: str) -> dict[str, Any] | None:
@@ -686,7 +874,8 @@ class SceneSession:
         if not isinstance(ordinal, int):
             return None
         later = [
-            s for s in self.dataset.get("plot", {}).get("sequence", [])
+            s
+            for s in self.dataset.get("plot", {}).get("sequence", [])
             if isinstance(s, dict)
             and isinstance(s.get("ordinal"), int)
             and s["ordinal"] > ordinal
@@ -695,7 +884,6 @@ class SceneSession:
             return None
         return copy.deepcopy(min(later, key=lambda s: s["ordinal"]))
 
-
 def open_scene_session(
     repository_root: Path,
     *,
@@ -703,6 +891,7 @@ def open_scene_session(
 ) -> SceneSession:
     backend = TreeDatasetBackend(repository_root)
     dataset = backend.load()
+    baseline_digest = hashlib.sha256(_canonical(dataset)).hexdigest()
     status = COMPAT.classify(dataset, requested_operation="ordinary")
     if status.get("state") == "migration_required":
         if not authorize_transition:
@@ -725,4 +914,9 @@ def open_scene_session(
 
     if status.get("state") != "directly_compatible":
         raise CompatibilityGateError(status)
-    return SceneSession(backend, dataset, status)
+    return SceneSession(
+        backend,
+        dataset,
+        status,
+        baseline_digest=baseline_digest,
+    )
