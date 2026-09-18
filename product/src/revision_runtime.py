@@ -557,12 +557,12 @@ def analyze_impact(
             state = "unresolved"
         else:
             material = bool(relation["material"])
-            if replacement:
-                state = "superseded"
-            elif material:
-                state = "review_required"
-            else:
+            if not material:
                 state = "still_valid"
+            elif replacement:
+                state = "superseded"
+            else:
+                state = "review_required"
 
         impact = {
             "id": _stable_id(

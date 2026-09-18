@@ -30,7 +30,9 @@
     "unrelated_state_must_not_be_invalidated": true,
     "semantic_equivalence_must_not_be_invented": true,
     "missing_materiality_outcome": "unresolved",
-    "known_replacement_outcome": "superseded"
+    "known_replacement_outcome": "superseded",
+    "nonmaterial_replacement_outcome": "still_valid",
+    "replacement_superseded_requires_material_dependency": true
   },
   "freshness": {
     "is_not_authority_class": true,

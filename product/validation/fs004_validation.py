@@ -562,6 +562,15 @@ def task_replacement_reconstruction() -> bool:
             "FS-004: known replacement path did not classify dependency as superseded",
         ):
             return False
+        if not check(
+            impacts["scene-001-arrival"]["state"] == "still_valid",
+            "FS-004: non-material dependent was incorrectly invalidated by upstream replacement",
+        ):
+            return False
+        rt.ensure_artifact_current(
+            session.dataset,
+            rt._artifact(session.dataset, "scene-001-arrival"),
+        )
 
         pending = session.reconcile(
             "scene-002-signal-shed",

@@ -421,7 +421,8 @@
       "tasks": [
         "fs004-reconciliation-contract",
         "fs004-impact-reconciliation",
-        "fs004-revision-runtime"
+        "fs004-revision-runtime",
+        "fs004-replacement-reconstruction"
       ]
     },
     {
@@ -518,7 +519,8 @@
     {
       "requirement": "FS-004-NR-024",
       "tasks": [
-        "fs004-impact-reconciliation"
+        "fs004-impact-reconciliation",
+        "fs004-replacement-reconstruction"
       ]
     },
     {
