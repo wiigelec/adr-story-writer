@@ -181,6 +181,41 @@ def _blocked(artifact: dict[str, Any]) -> bool:
     )
 
 
+def _normalize_candidate_dependencies(
+    material_dependencies: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    if material_dependencies is None:
+        return []
+    if not isinstance(material_dependencies, list):
+        raise RevisionRuntimeError("material_dependencies must be an array")
+    normalized: list[dict[str, Any]] = []
+    for relation in material_dependencies:
+        if not isinstance(relation, dict):
+            raise RevisionRuntimeError("candidate dependency must be an object")
+        target_id = relation.get("target_id")
+        if not isinstance(target_id, str) or not target_id:
+            raise RevisionRuntimeError("candidate dependency requires target_id")
+        value = copy.deepcopy(relation)
+        value["material"] = True
+        value.setdefault("authority_basis", "accepted")
+        normalized.append(value)
+    return normalized
+
+
+def _normalize_candidate_assumptions(
+    assumptions: list[str] | None,
+) -> list[str]:
+    if assumptions is None:
+        return []
+    if not isinstance(assumptions, list) or any(
+        not isinstance(item, str) or not item for item in assumptions
+    ):
+        raise RevisionRuntimeError(
+            "candidate assumptions must be an array of non-empty strings"
+        )
+    return list(assumptions)
+
+
 def propose_revision(
     dataset: dict[str, Any],
     target_id: str,
@@ -188,6 +223,8 @@ def propose_revision(
     *,
     identity_operation: str = "revision",
     replacement_id: str | None = None,
+    material_dependencies: list[dict[str, Any]] | None = None,
+    assumptions: list[str] | None = None,
 ) -> dict[str, Any]:
     target = _artifact(dataset, target_id)
     owner = _surface_owner(target)
@@ -208,12 +245,16 @@ def propose_revision(
     base_revision = target.get("revision")
     if not isinstance(base_revision, str) or not base_revision:
         raise RevisionRuntimeError("target has no durable revision")
+    candidate_dependencies = _normalize_candidate_dependencies(material_dependencies)
+    candidate_assumptions = _normalize_candidate_assumptions(assumptions)
     seed = {
         "target_id": target_id,
         "base_revision": base_revision,
         "proposed_changes": proposed_changes,
         "identity_operation": identity_operation,
         "replacement_id": replacement_id,
+        "material_dependencies": candidate_dependencies,
+        "assumptions": candidate_assumptions,
     }
     candidate = {
         "id": _stable_id("semantic-revision-candidate", seed),
@@ -225,6 +266,8 @@ def propose_revision(
         "proposed_changes": copy.deepcopy(proposed_changes),
         "identity_operation": identity_operation,
         "replacement_id": replacement_id,
+        "material_dependencies": candidate_dependencies,
+        "assumptions": candidate_assumptions,
         "status": "candidate",
     }
     candidates = target.setdefault("revision_candidates", [])
@@ -243,6 +286,17 @@ def _candidate_for(dataset: dict[str, Any], candidate_id: str):
             if isinstance(candidate, dict) and candidate.get("id") == candidate_id:
                 return artifact, candidate
     raise RevisionRuntimeError(f"unknown revision candidate: {candidate_id}")
+
+
+def inspect_revision_candidate(
+    dataset: dict[str, Any],
+    candidate_id: str,
+) -> dict[str, Any]:
+    target, candidate = _candidate_for(dataset, candidate_id)
+    result = copy.deepcopy(candidate)
+    result["target_current_revision"] = target.get("revision")
+    result["target_authority_class"] = target.get("authority_class")
+    return result
 
 
 def reject_revision(
@@ -563,6 +617,12 @@ def reconcile(
             proposed_changes,
             identity_operation=identity_operation,
             replacement_id=replacement_id,
+            material_dependencies=[{
+                "target_id": current["upstream_result_id"],
+                "target_revision": current["to_revision"],
+                "authority_basis": "accepted",
+                "material": True,
+            }],
         )
         stored_target, stored_candidate = _candidate_for(dataset, candidate["id"])
         stored_candidate["reconciliation_context"] = {
@@ -795,6 +855,8 @@ class RevisionSession(SCENE.SceneSession):
         *,
         identity_operation: str = "revision",
         replacement_id: str | None = None,
+        material_dependencies: list[dict[str, Any]] | None = None,
+        assumptions: list[str] | None = None,
     ) -> dict[str, Any]:
         return propose_revision(
             self.dataset,
@@ -802,7 +864,12 @@ class RevisionSession(SCENE.SceneSession):
             proposed_changes,
             identity_operation=identity_operation,
             replacement_id=replacement_id,
+            material_dependencies=material_dependencies,
+            assumptions=assumptions,
         )
+
+    def inspect_revision_candidate(self, candidate_id: str) -> dict[str, Any]:
+        return inspect_revision_candidate(self.dataset, candidate_id)
 
     def accept_revision(self, candidate_id: str) -> dict[str, Any]:
         return accept_revision(self.dataset, candidate_id)

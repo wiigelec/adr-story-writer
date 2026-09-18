@@ -216,12 +216,38 @@ def task_revision_runtime() -> bool:
                     "damage but was not the primary cause."
                 )
             },
+            material_dependencies=[{
+                "target_id": "setting-red-hollow",
+                "target_revision": "canon-setting-r1",
+                "authority_basis": "accepted",
+            }],
+            assumptions=[
+                "The proposed cause still concerns the Red Hollow telegraph span."
+            ],
         )
+        inspected = session.inspect_revision_candidate(candidate["id"])
         if not check(event["revision"] == accepted_before["revision"], "FS-004: candidate revision changed accepted revision"):
             return False
         if not check(event["summary"] == accepted_before["summary"], "FS-004: candidate revision changed accepted meaning"):
             return False
         if not check(candidate["authority_class"] == "candidate_semantic", "FS-004: upstream proposal is not candidate semantic state"):
+            return False
+        if not check(
+            inspected.get("material_dependencies", [{}])[0].get("target_id")
+            == "setting-red-hollow",
+            "FS-004: candidate material dependencies are not inspectable",
+        ):
+            return False
+        if not check(
+            inspected.get("assumptions")
+            == ["The proposed cause still concerns the Red Hollow telegraph span."],
+            "FS-004: candidate assumptions are not inspectable",
+        ):
+            return False
+        if not check(
+            inspected.get("target_current_revision") == accepted_before["revision"],
+            "FS-004: candidate inspection lost affected current scope",
+        ):
             return False
 
         ambiguous = session.propose_revision(
@@ -282,6 +308,7 @@ def _perform_reconciliation():
     scene2_candidate_state = copy.deepcopy(
         rt._artifact(session.dataset, "scene-002-signal-shed")
     )
+    pending_candidate = session.inspect_revision_candidate(pending["candidate_id"])
     plot_change = session.accept_revision(pending["candidate_id"])
 
     downstream = session.analyze_impact(plot_change)
@@ -316,6 +343,7 @@ def _perform_reconciliation():
         "scene2_before": scene2_before,
         "scene2_candidate_state": scene2_candidate_state,
         "pending_plot_revision": pending,
+        "pending_plot_candidate": pending_candidate,
         "plot_change": plot_change,
         "downstream": downstream_by_id,
     }
@@ -352,6 +380,14 @@ def task_impact_reconciliation() -> bool:
         if not check(
             env["pending_plot_revision"]["state"] == "candidate_pending_acceptance",
             "FS-004: Plot reconciliation did not create an explicit candidate",
+        ):
+            return False
+        if not check(
+            env["pending_plot_candidate"].get("material_dependencies", [{}])[0].get(
+                "target_id"
+            )
+            == env["event_change"]["result_target_id"],
+            "FS-004: Plot reconciliation candidate lost its accepted upstream dependency",
         ):
             return False
         if not check(scene2["revision"] == env["plot_change"]["to_revision"], "FS-004: accepted Plot revision not established after explicit acceptance"):
@@ -474,7 +510,34 @@ def task_replacement_reconstruction() -> bool:
             "FS-004: known replacement path did not classify dependency as superseded",
         ):
             return False
+
+        pending = session.reconcile(
+            "scene-002-signal-shed",
+            impacts["scene-002-signal-shed"]["id"],
+            "supersede",
+            proposed_changes={
+                "purpose": (
+                    "Diagnose the relay and follow evidence of the landslide while "
+                    "preserving the concealed satchel boundary."
+                )
+            },
+            replacement_id="scene-002-landslide-shed",
+        )
+        if not check(
+            pending.get("state") == "candidate_pending_acceptance",
+            "FS-004: downstream semantic replacement did not remain candidate",
+        ):
+            return False
+        plot_candidate = session.inspect_revision_candidate(pending["candidate_id"])
+        if not check(
+            plot_candidate.get("identity_operation") == "replacement",
+            "FS-004: downstream replacement candidate lost replacement identity",
+        ):
+            return False
+        plot_change = session.accept_revision(pending["candidate_id"])
+
         replacement = rt._artifact(session.dataset, "event-landslide-break")
+        replaced_scene = rt._artifact(session.dataset, "scene-002-landslide-shed")
         if not check(
             replacement.get("supersedes") == "event-storm",
             "FS-004: replacement identity did not preserve supersession provenance",
@@ -485,10 +548,26 @@ def task_replacement_reconstruction() -> bool:
             "FS-004: replacement acceptance provenance missing",
         ):
             return False
+        if not check(
+            replaced_scene.get("supersedes") == "scene-002-signal-shed",
+            "FS-004: dependent replacement did not preserve superseded identity",
+        ):
+            return False
+        if not check(
+            replaced_scene.get("reconciliation", {}).get("state") == "reconciled",
+            "FS-004: dependent replacement reconciliation did not close after acceptance",
+        ):
+            return False
+        if not check(
+            plot_change.get("result_target_id") == "scene-002-landslide-shed",
+            "FS-004: accepted downstream replacement did not expose resulting identity",
+        ):
+            return False
+
         session.persist()
         fresh = rt.open_revision_session(root)
         replacement = rt._artifact(fresh.dataset, "event-landslide-break")
-        scene2 = rt._artifact(fresh.dataset, "scene-002-signal-shed")
+        replaced_scene = rt._artifact(fresh.dataset, "scene-002-landslide-shed")
         return (
             check(
                 replacement.get("supersedes") == "event-storm",
@@ -499,8 +578,12 @@ def task_replacement_reconstruction() -> bool:
                 "FS-004: replacement acceptance history not reconstructed",
             )
             and check(
-                scene2.get("reconciliation", {}).get("state") == "superseded",
-                "FS-004: superseded downstream state not reconstructed",
+                replaced_scene.get("supersedes") == "scene-002-signal-shed",
+                "FS-004: replaced downstream identity not reconstructed",
+            )
+            and check(
+                replaced_scene.get("reconciliation", {}).get("state") == "reconciled",
+                "FS-004: replaced downstream reconciliation state not reconstructed",
             )
         )
     finally:

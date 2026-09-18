@@ -454,7 +454,8 @@
     {
       "requirement": "FS-004-NR-015",
       "tasks": [
-        "fs004-impact-reconciliation"
+        "fs004-impact-reconciliation",
+        "fs004-revision-runtime"
       ]
     },
     {
