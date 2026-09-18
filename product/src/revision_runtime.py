@@ -792,6 +792,136 @@ def ensure_scene_ready(dataset: dict[str, Any], scene_id: str) -> None:
                 ensure_artifact_current(dataset, artifact)
 
 
+def _target_manuscript(
+    dataset: dict[str, Any],
+    scene_id: str,
+) -> dict[str, Any] | None:
+    files = dataset.get("chapters", {}).get("files", [])
+    if not isinstance(files, list):
+        return None
+    for artifact in files:
+        if isinstance(artifact, dict) and artifact.get("plot_scope") == scene_id:
+            return artifact
+    return None
+
+
+def _ensure_scene_inputs_for_manuscript_repair(
+    dataset: dict[str, Any],
+    scene_id: str,
+) -> None:
+    scene = SCENE._scene_by_id(dataset, scene_id)
+    ensure_artifact_current(dataset, scene)
+
+    prose = dataset.get("prose", {})
+    for collection in ("beats", "modes", "pseudo_prose"):
+        values = prose.get(collection, {})
+        if not isinstance(values, dict):
+            continue
+        for artifact in values.values():
+            if not isinstance(artifact, dict):
+                continue
+            target = artifact.get("target_scope")
+            if target == scene_id or (collection == "modes" and target is None):
+                ensure_artifact_current(dataset, artifact)
+
+
+def build_manuscript_repair_package(
+    dataset: dict[str, Any],
+    scene_id: str,
+) -> dict[str, Any]:
+    _ensure_scene_inputs_for_manuscript_repair(dataset, scene_id)
+    current = _target_manuscript(dataset, scene_id)
+    if current is None or current.get("authority_class") != "accepted_manuscript":
+        raise SCENE.SceneNotReadyError(
+            "Manuscript repair requires an accepted current target Manuscript"
+        )
+    reconciliation = current.get("reconciliation")
+    if (
+        not isinstance(reconciliation, dict)
+        or reconciliation.get("state") not in {"review_required", "stale", "superseded"}
+    ):
+        raise SCENE.SceneNotReadyError(
+            "Manuscript repair requires a materially stale or superseded target"
+        )
+
+    contract = SCENE.build_production_contract(dataset, scene_id)
+    package = SCENE.build_generation_package(contract)
+    package["purpose"] = "manuscript_reconciliation"
+    package["replaces_manuscript"] = {
+        "id": current.get("id"),
+        "revision": current.get("revision"),
+        "reconciliation": copy.deepcopy(reconciliation),
+    }
+    package["provenance"]["package_digest"] = None
+    package["provenance"]["package_digest"] = hashlib.sha256(
+        _canonical(package)
+    ).hexdigest()
+    return package
+
+
+def assert_manuscript_repair_package_current(
+    dataset: dict[str, Any],
+    package: dict[str, Any],
+) -> None:
+    SCENE._verify_package_digest(package)
+    if package.get("purpose") != "manuscript_reconciliation":
+        raise SCENE.SceneNotReadyError("package is not a Manuscript-repair package")
+    scene_id = package.get("target_scope")
+    if not isinstance(scene_id, str):
+        raise SCENE.SceneNotReadyError("Manuscript-repair package has no target scope")
+
+    _ensure_scene_inputs_for_manuscript_repair(dataset, scene_id)
+    current = _target_manuscript(dataset, scene_id)
+    replaced = package.get("replaces_manuscript")
+    if current is None or not isinstance(replaced, dict):
+        raise SCENE.SceneNotReadyError("Manuscript-repair target is missing")
+    if (
+        replaced.get("id") != current.get("id")
+        or replaced.get("revision") != current.get("revision")
+    ):
+        raise SCENE.SceneNotReadyError("Manuscript-repair target changed after packaging")
+
+    reconciliation = current.get("reconciliation")
+    if (
+        not isinstance(reconciliation, dict)
+        or reconciliation.get("state") not in {"review_required", "stale", "superseded"}
+    ):
+        raise SCENE.SceneNotReadyError("Manuscript-repair target is no longer stale")
+
+    selected = package.get("selected_revisions", {})
+    scene = SCENE._scene_by_id(dataset, scene_id)
+    if selected.get("scene") != scene.get("revision"):
+        raise SCENE.SceneNotReadyError("Manuscript-repair Plot revision is stale")
+
+    index = SCENE.artifact_index(dataset)
+    for artifact_id, revision in selected.get("dependencies", {}).items():
+        artifact = index.get(artifact_id)
+        if artifact is None or artifact.get("revision") != revision:
+            raise SCENE.SceneNotReadyError(
+                f"Manuscript-repair dependency {artifact_id} is stale"
+            )
+    controls = selected.get("prose_controls", {})
+    for mapping in controls.values() if isinstance(controls, dict) else []:
+        if not isinstance(mapping, dict):
+            continue
+        for artifact_id, revision in mapping.items():
+            artifact = index.get(artifact_id)
+            if artifact is None or artifact.get("revision") != revision:
+                raise SCENE.SceneNotReadyError(
+                    f"Manuscript-repair control {artifact_id} is stale"
+                )
+
+
+def create_manuscript_replacement_candidate(
+    dataset: dict[str, Any],
+    package: dict[str, Any],
+    text: str,
+    attempt: int,
+) -> dict[str, Any]:
+    assert_manuscript_repair_package_current(dataset, package)
+    return SCENE.create_candidate(package, text, attempt)
+
+
 def assert_package_current(dataset: dict[str, Any], package: dict[str, Any]) -> None:
     SCENE._verify_package_digest(package)
     scene_id = package.get("target_scope")
@@ -901,6 +1031,126 @@ class RevisionSession(SCENE.SceneSession):
         **kwargs,
     ) -> dict[str, Any]:
         return reconcile(self.dataset, dependent_id, impact_id, action, **kwargs)
+
+    def manuscript_repair_package(self, scene_id: str) -> dict[str, Any]:
+        return build_manuscript_repair_package(self.dataset, scene_id)
+
+    def create_manuscript_replacement_candidate(
+        self,
+        package: dict[str, Any],
+        text: str,
+        attempt: int,
+    ) -> dict[str, Any]:
+        return create_manuscript_replacement_candidate(
+            self.dataset,
+            package,
+            text,
+            attempt,
+        )
+
+    def persist_manuscript_replacement(
+        self,
+        accepted: dict[str, Any],
+    ) -> None:
+        if accepted.get("authority_class") != "accepted_manuscript":
+            raise SCENE.AcceptanceError(
+                "Manuscript replacement requires accepted Manuscript state"
+            )
+        provenance = accepted.get("generation_provenance", {})
+        package = provenance.get("package_snapshot")
+        if not isinstance(package, dict):
+            raise SCENE.AcceptanceError(
+                "Manuscript replacement lacks generation package provenance"
+            )
+        assert_manuscript_repair_package_current(self.dataset, package)
+
+        scene_id = accepted.get("target_scope")
+        if not isinstance(scene_id, str):
+            raise SCENE.AcceptanceError("Manuscript replacement has no target scope")
+        scene = SCENE._scene_by_id(self.dataset, scene_id)
+        ordinal = scene.get("ordinal")
+        if not isinstance(ordinal, int):
+            raise SCENE.SceneRuntimeError(
+                "target scene requires ordinal for Manuscript persistence"
+            )
+
+        current = _target_manuscript(self.dataset, scene_id)
+        if current is None:
+            raise SCENE.AcceptanceError("Manuscript replacement target disappeared")
+
+        previous = copy.deepcopy(current)
+        updated = copy.deepcopy(self.dataset)
+        files = updated["chapters"]["files"]
+        existing = next(
+            (
+                entry
+                for entry in files
+                if isinstance(entry, dict) and entry.get("plot_scope") == scene_id
+            ),
+            None,
+        )
+        if existing is None:
+            raise SCENE.AcceptanceError("Manuscript replacement target disappeared")
+
+        prior_history = copy.deepcopy(existing.get("manuscript_revision_history", []))
+        if not isinstance(prior_history, list):
+            raise RevisionRuntimeError("manuscript_revision_history must be an array")
+        prior_history.append(previous)
+
+        reconciliation_history = copy.deepcopy(
+            existing.get("reconciliation_history", [])
+        )
+        if not isinstance(reconciliation_history, list):
+            raise RevisionRuntimeError("reconciliation_history must be an array")
+        reconciliation_history.append({
+            "action": "replace_manuscript",
+            "dependent_id": existing.get("id"),
+            "dependent_revision_before": existing.get("revision"),
+            "dependent_revision_after": accepted.get("revision"),
+            "upstream_id": scene_id,
+            "to_revision": scene.get("revision"),
+            "state": "reconciled",
+        })
+
+        record = {
+            "id": existing.get("id") or f"manuscript-{scene_id}",
+            "surface": "manuscript",
+            "authority_class": "accepted_manuscript",
+            "revision": accepted["revision"],
+            "ordinal": ordinal,
+            "plot_scope": scene_id,
+            "path": f"chapters/{ordinal:03d}-{scene_id}.md",
+            "generation_package_id": accepted["generation_package_id"],
+            "generation_provenance": copy.deepcopy(
+                accepted["generation_provenance"]
+            ),
+            "review": copy.deepcopy(accepted["review"]),
+            "accepted_from_candidate": accepted["accepted_from_candidate"],
+            "content": accepted["text"],
+            "dependency_relations": [{
+                "target_id": scene_id,
+                "target_revision": scene.get("revision"),
+                "authority_basis": "accepted",
+                "material": True,
+            }],
+            "replaces_revision": previous.get("revision"),
+            "manuscript_revision_history": prior_history,
+            "reconciliation_history": reconciliation_history,
+            "reconciliation": {
+                "state": "reconciled",
+                "action": "replace_manuscript",
+                "upstream_id": scene_id,
+                "to_revision": scene.get("revision"),
+            },
+        }
+        files[files.index(existing)] = record
+        files.sort(key=lambda entry: entry.get("ordinal", 0))
+
+        self.baseline_digest = self.backend.save(
+            updated,
+            expected_digest=self.baseline_digest,
+        )
+        self.dataset = updated
 
     def create_candidate(
         self,

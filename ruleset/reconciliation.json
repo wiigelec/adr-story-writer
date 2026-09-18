@@ -54,7 +54,10 @@
     "accepted_manuscript_not_directly_rewritten": true,
     "consequential_replacement_meaning_not_invented": true,
     "semantic_meaning_change_requires_candidate_acceptance": true,
-    "preserve_unmodified_does_not_require_revision": true
+    "preserve_unmodified_does_not_require_revision": true,
+    "manuscript_repair_uses_candidate_review_acceptance": true,
+    "stale_manuscript_may_be_historical_repair_input": true,
+    "prior_accepted_manuscript_retained_until_replacement_acceptance": true
   },
   "generation_package": {
     "used_package_immutable": true,
@@ -67,6 +70,7 @@
     "prior_revision_provenance_is_durable": true,
     "unresolved_state_is_durable": true,
     "save_conflict_must_fail": true,
-    "replacement_acceptance_provenance_is_durable": true
+    "replacement_acceptance_provenance_is_durable": true,
+    "manuscript_revision_chain_is_durable": true
   }
 }

@@ -590,6 +590,151 @@ def task_replacement_reconstruction() -> bool:
         temp.cleanup()
 
 
+def task_manuscript_repair() -> bool:
+    rt = _runtime()
+    temp = tempfile.TemporaryDirectory()
+    try:
+        root = Path(temp.name)
+        _fixture(root)
+        session = rt.open_revision_session(root, authorize_transition=True)
+
+        event_candidate = session.propose_revision(
+            "event-storm",
+            {"summary": "A rockslide, rather than lightning alone, broke the west span."},
+        )
+        event_change = session.accept_revision(event_candidate["id"])
+        impacts = {
+            item["dependent_id"]: item
+            for item in session.analyze_impact(event_change)
+        }
+        pending_plot = session.reconcile(
+            "scene-002-signal-shed",
+            impacts["scene-002-signal-shed"]["id"],
+            "revise",
+            proposed_changes={
+                "purpose": (
+                    "Diagnose the relay and follow evidence of the rockslide without "
+                    "revealing Eli's hidden satchel."
+                )
+            },
+        )
+        plot_change = session.accept_revision(pending_plot["candidate_id"])
+        downstream = {
+            item["dependent_id"]: item
+            for item in session.analyze_impact(plot_change)
+        }
+
+        for dependent_id in ("beats-scene-002", "pseudo-scene-002"):
+            session.reconcile(
+                dependent_id,
+                downstream[dependent_id]["id"],
+                "rebuild",
+            )
+        session.reconcile(
+            "scene-003-first-message",
+            downstream["scene-003-first-message"]["id"],
+            "preserve",
+        )
+
+        old_manuscript = copy.deepcopy(
+            rt._artifact(session.dataset, "manuscript-scene-002")
+        )
+        if not check(
+            old_manuscript.get("reconciliation", {}).get("state")
+            == "review_required",
+            "FS-004: changed Manuscript was not left review-required",
+        ):
+            return False
+
+        try:
+            session.package("scene-002-signal-shed")
+        except rt.SCENE.SceneNotReadyError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-004: stale Manuscript incorrectly allowed ordinary generation",
+            )
+
+        repair_package = session.manuscript_repair_package(
+            "scene-002-signal-shed"
+        )
+        if not check(
+            repair_package.get("purpose") == "manuscript_reconciliation",
+            "FS-004: Manuscript repair package is not explicitly scoped",
+        ):
+            return False
+        if not check(
+            repair_package.get("replaces_manuscript", {}).get("revision")
+            == old_manuscript.get("revision"),
+            "FS-004: repair package lost stale Manuscript provenance",
+        ):
+            return False
+
+        candidate = session.create_manuscript_replacement_candidate(
+            repair_package,
+            (
+                "Mara verifies the relay, recognizes that the storm exposed rather "
+                "than caused the break, and follows the rockslide evidence west."
+            ),
+            70,
+        )
+        rt.SCENE.review_candidate(candidate, repair_package)
+        accepted = rt.SCENE.accept_candidate(candidate, repair_package)
+
+        # The previously accepted text remains current until explicit acceptance
+        # and persistence of the replacement.
+        if not check(
+            rt._artifact(session.dataset, "manuscript-scene-002")["revision"]
+            == old_manuscript["revision"],
+            "FS-004: replacement candidate overwrote accepted Manuscript early",
+        ):
+            return False
+
+        session.persist_manuscript_replacement(accepted)
+        current = rt._artifact(session.dataset, "manuscript-scene-002")
+        if not check(
+            current["revision"] != old_manuscript["revision"],
+            "FS-004: accepted Manuscript replacement did not establish a new revision",
+        ):
+            return False
+        if not check(
+            current.get("replaces_revision") == old_manuscript["revision"],
+            "FS-004: Manuscript replacement lost prior revision provenance",
+        ):
+            return False
+        if not check(
+            bool(current.get("manuscript_revision_history")),
+            "FS-004: prior accepted Manuscript was not retained historically",
+        ):
+            return False
+
+        fresh = rt.open_revision_session(root)
+        rebuilt = rt._artifact(fresh.dataset, "manuscript-scene-002")
+        if not check(
+            rebuilt["revision"] == current["revision"],
+            "FS-004: replacement Manuscript revision not reconstructed",
+        ):
+            return False
+        if not check(
+            rebuilt.get("replaces_revision") == old_manuscript["revision"],
+            "FS-004: replacement chain not reconstructed",
+        ):
+            return False
+
+        # Once repaired, ordinary production may resume with the new current text.
+        package = fresh.package("scene-002-signal-shed")
+        return check(
+            package["selected_revisions"]["current_target_manuscript"].get(
+                "manuscript-scene-002"
+            )
+            == rebuilt["revision"],
+            "FS-004: repaired Manuscript did not restore ordinary readiness",
+        )
+    finally:
+        temp.cleanup()
+
+
 def task_persistence_conflict() -> bool:
     rt = _runtime()
     temp = tempfile.TemporaryDirectory()
@@ -679,6 +824,7 @@ TASKS: dict[str, Callable[[], bool | None]] = {
     "fs004-package-readiness": task_package_readiness,
     "fs004-persistence-reconstruction": task_persistence_reconstruction,
     "fs004-replacement-reconstruction": task_replacement_reconstruction,
+    "fs004-manuscript-repair": task_manuscript_repair,
     "fs004-persistence-conflict": task_persistence_conflict,
     "fs004-ruleset-compatibility": task_ruleset_compatibility,
     "fs004-dataset-boundary": task_dataset_boundary,
