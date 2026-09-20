@@ -419,7 +419,7 @@ def _finish_reconciliation(
     return record
 
 
-def accept_revision(
+def _accept_revision_in_place(
     dataset: dict[str, Any],
     candidate_id: str,
 ) -> dict[str, Any]:
@@ -533,6 +533,18 @@ def accept_revision(
         "identity_operation": operation,
         "candidate_id": candidate_id,
     }
+
+def accept_revision(
+    dataset: dict[str, Any],
+    candidate_id: str,
+) -> dict[str, Any]:
+    before = copy.deepcopy(dataset)
+    try:
+        return _accept_revision_in_place(dataset, candidate_id)
+    except Exception:
+        dataset.clear()
+        dataset.update(before)
+        raise
 
 def analyze_impact(
     dataset: dict[str, Any],

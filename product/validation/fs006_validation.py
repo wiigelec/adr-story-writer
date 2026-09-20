@@ -343,6 +343,45 @@ def task_edit_routing():
         )
 
 
+def task_edit_failure_atomicity():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        s = _develop(rt, root)
+        view = s.character_dossier("character-mara")
+        before = copy.deepcopy(s.dataset)
+
+        try:
+            s.propose_view_edit(view, {
+                "targets": [
+                    {
+                        "target_id": "character-mara",
+                        "changes": {
+                            "traits": ["methodical", "patient"],
+                        },
+                    },
+                    {
+                        "target_id": "plot-synopsis",
+                        "changes": {
+                            "id": "illegal-governed-identity-replacement",
+                        },
+                    },
+                ],
+            })
+        except rt.REV.RevisionRuntimeError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-006: invalid later coordinated target was silently accepted",
+            )
+
+        return check(
+            s.dataset == before,
+            "FS-006: failed coordinated generated-view edit partially mutated working Dataset",
+        )
+
 def task_presentation_comparison():
     rt = _load_runtime()
     with tempfile.TemporaryDirectory() as temp:
@@ -437,6 +476,7 @@ TASKS = {
     "fs006-generated-views": task_generated_views,
     "fs006-freshness-regeneration": task_freshness_regeneration,
     "fs006-edit-routing": task_edit_routing,
+    "fs006-edit-failure-atomicity": task_edit_failure_atomicity,
     "fs006-presentation-comparison": task_presentation_comparison,
     "fs006-reconstruction": task_reconstruction,
     "fs006-dataset-boundary": task_dataset_boundary,
