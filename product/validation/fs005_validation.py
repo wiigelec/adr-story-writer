@@ -141,8 +141,46 @@ def task_authoring_runtime():
         try:
             s.accept_artifact(stale_dependent["id"])
         except rt.SCENE.AcceptanceError:
+            pass
+        else:
+            return check(False, "dependent candidate silently rebased onto changed upstream revision")
+
+        # Prove transitive closure through the FS-004 lifecycle:
+        # A changes, impact analysis marks accepted B review_required, and a
+        # candidate C that materially depends on B must be refused even though
+        # B's own revision did not change.
+        transitive_a = s.propose_artifact("canon.character", {
+            "id": "transitive-a", "name": "A",
+        })
+        s.accept_artifact(transitive_a["id"])
+        transitive_b = s.propose_artifact("plot.sequence", {
+            "id": "transitive-b", "ordinal": 4, "viewpoint": "character-one",
+            "entry": "Start.", "exit": "Stop.",
+        }, dependencies=[transitive_a["id"]])
+        s.accept_artifact(transitive_b["id"])
+        transitive_c = s.propose_artifact("plot.sequence", {
+            "id": "transitive-c", "ordinal": 5, "viewpoint": "character-one",
+            "entry": "Start.", "exit": "Stop.",
+        }, dependencies=[transitive_b["id"]])
+
+        upstream_revision = s.propose_revision(transitive_a["id"], {"name": "A2"})
+        accepted_change = s.accept_revision(upstream_revision["id"])
+        impacts = s.analyze_impact(accepted_change)
+        if not check(
+            any(
+                impact.get("dependent_id") == transitive_b["id"]
+                and impact.get("state") == "review_required"
+                for impact in impacts
+            ),
+            "FS-004 impact analysis did not mark transitive middle dependency review_required",
+        ):
+            return False
+
+        try:
+            s.accept_artifact(transitive_c["id"])
+        except rt.SCENE.AcceptanceError:
             return True
-        return check(False, "dependent candidate silently rebased onto changed upstream revision")
+        return check(False, "transitive stale dependency did not block candidate acceptance")
 
 
 def task_progressive_refinement():
