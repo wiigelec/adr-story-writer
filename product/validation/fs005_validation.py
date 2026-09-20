@@ -1,0 +1,239 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import re
+import tempfile
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
+REQS = ROOT / "product" / "specs" / "FS-005-requirements.md"
+MANIFEST = ROOT / "product" / "validation" / "requirement-evaluation.json"
+DESIGN_REVISION = "21e017572c31f0aa9b95b9de0785f557511949b1"
+
+
+def check(condition: bool, message: str) -> bool:
+    if not condition:
+        print(f"FAIL product-validation: {message}")
+        return False
+    return True
+
+
+def _load_runtime():
+    path = ROOT / "product" / "src" / "authoring_runtime.py"
+    spec = importlib.util.spec_from_file_location("fs005_authoring_runtime", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("cannot load FS-005 authoring runtime")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _fixture(root: Path) -> None:
+    d = root / "dataset"
+    _write_json(d / "instance.json", {"id": "fs005-authoring-fixture"})
+    _write_json(d / "story.json", {"application": "adr-story-writer", "dataset_role": "story", "title": "FS-005 Workshop Fixture", "status": "active"})
+    _write_json(d / "canon/character.json", {})
+    _write_json(d / "canon/setting.json", {})
+    _write_json(d / "canon/events.json", [])
+    _write_json(d / "plot/synopsis.json", {})
+    _write_json(d / "plot/outline.json", [])
+    _write_json(d / "plot/sequence.json", [])
+    _write_json(d / "prose/beats.json", {})
+    _write_json(d / "prose/modes.json", {})
+    _write_json(d / "prose/pseudo-prose.json", {})
+    _write_json(d / "chapters/manifest.json", {"format": "markdown", "files": []})
+
+
+def _develop(rt, root: Path):
+    s = rt.open_authoring_session(root, authorize_transition=True)
+    s.accept_artifact(s.propose_artifact("canon.character", {"id": "character-mara", "name": "Mara", "traits": ["methodical"]})["id"])
+    s.accept_artifact(s.propose_artifact("canon.setting", {"id": "setting-red-hollow", "name": "Red Hollow"})["id"])
+    s.accept_artifact(s.propose_artifact("canon.events", {"id": "event-storm", "summary": "A storm damages the west telegraph span."}, dependencies=["setting-red-hollow"])["id"])
+    s.accept_artifact(s.propose_artifact("plot.synopsis", {"id": "plot-synopsis", "summary": "Mara arrives to restore telegraph service after the storm."}, dependencies=["character-mara", "event-storm"])["id"])
+    s.accept_artifact(s.propose_artifact("plot.sequence", {
+        "id": "scene-001", "ordinal": 1, "viewpoint": "character-mara",
+        "entry": "Mara enters the signal shed.",
+        "required_movements": ["Mara tests the relay."],
+        "exit": "Mara decides to inspect the west span.",
+        "reader_information": {"may_reveal": ["The relay works locally."]},
+    }, dependencies=["character-mara", "event-storm", "setting-red-hollow"])["id"])
+    return s
+
+
+def task_planning_binding():
+    for rel in (
+        "product/planning/FS-005-governed-author-workshop-and-progressive-story-development/functional-set.md",
+        "product/planning/FS-005-governed-author-workshop-and-progressive-story-development/plan.md",
+    ):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        if not check(f"design_revision: {DESIGN_REVISION}" in text, f"{rel}: missing exact FS-005 Design binding"):
+            return False
+    return check(REQS.is_file(), "FS-005 normative requirements missing")
+
+
+def task_authoring_runtime():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        s = rt.open_authoring_session(root, authorize_transition=True)
+        c = s.propose_artifact("canon.character", {"id": "character-one", "name": "One"})
+        if not check(c["authority_class"] == "candidate_semantic", "new Canon proposal was not candidate"):
+            return False
+        r = s.revise_candidate("character-one", {"traits": ["careful"]})
+        if not check(r["id"] == c["id"] and r["revision"] != c["revision"], "candidate refinement identity/revision failure"):
+            return False
+        if not check(len(r.get("candidate_revision_history", [])) == 1, "candidate revision history missing"):
+            return False
+        a = s.accept_artifact("character-one")
+        if not check(a["authority_class"] == "accepted_semantic", "semantic candidate not accepted"):
+            return False
+
+        dep = s.propose_artifact("canon.character", {"id": "candidate-dependency", "name": "Candidate Dependency"})
+        dependent = s.propose_artifact("plot.sequence", {
+            "id": "dependent-scene", "ordinal": 2, "viewpoint": "character-one",
+            "entry": "Start.", "exit": "Stop.",
+        }, dependencies=[dep["id"]])
+        try:
+            s.accept_artifact(dependent["id"])
+        except rt.SCENE.AcceptanceError:
+            pass
+        else:
+            return check(False, "candidate dependency bypassed closure")
+        both = s.accept_artifacts([dep["id"], dependent["id"]])
+        return check(all(x["authority_class"] == "accepted_semantic" for x in both), "coordinated acceptance failed")
+
+
+def task_progressive_refinement():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        s = _develop(rt, root)
+        if not check(s.readiness("scene-001")["ready"] is False, "scene ready without production controls"):
+            return False
+        s.accept_artifact(s.propose_artifact("prose.beats", {
+            "id": "beats-scene-001", "target_scope": "scene-001",
+            "beats": ["Mara tests the relay.", "She chooses the west span."],
+        }, dependencies=["scene-001"])["id"])
+        s.accept_artifact(s.propose_artifact("prose.modes", {
+            "id": "mode-mara-close-third", "viewpoint": "close third through Mara", "tense": "past",
+        }, dependencies=["character-mara"])["id"])
+        s.accept_artifact(s.propose_artifact("prose.pseudo_prose", {
+            "id": "pseudo-scene-001", "target_scope": "scene-001",
+            "units": ["The relay test succeeds.", "Mara heads west."],
+        }, dependencies=["scene-001"])["id"])
+        after = s.readiness("scene-001")
+        if not check(after["ready"] is True, f"refined scene not ready: {after.get('blockers')}"):
+            return False
+        package = s.package("scene-001")
+        return check(package["target_scope"] == "scene-001", "ready scene did not hand off to FS-003")
+
+
+def task_views():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        s = _develop(rt, root)
+        c = s.propose_artifact("canon.character", {"id": "character-pending", "name": "Pending"})
+        story = s.overview()
+        candidates = s.overview("candidates")
+        return (
+            check(story.get("derived") is True, "story view not derived")
+            and check(c["id"] in story.get("pending_candidates", []), "story view omitted pending candidate")
+            and check(any(x.get("id") == c["id"] for x in candidates["candidates"]), "candidate view omitted pending candidate")
+        )
+
+
+def task_revision_integration():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        s = _develop(rt, root)
+        before = rt.REV._artifact(s.dataset, "character-mara")["revision"]
+        p = s.propose_revision("character-mara", {"traits": ["methodical", "skeptical"]})
+        if not check(rt.REV._artifact(s.dataset, "character-mara")["revision"] == before, "revision proposal changed accepted state"):
+            return False
+        accepted = s.accept_revision(p["id"])
+        return check(accepted["from_revision"] == before, "FS-004 revision semantics not preserved")
+
+
+def task_persistence_reconstruction():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        first = _develop(rt, root)
+        pending = first.propose_artifact("canon.character", {"id": "character-persisted-candidate", "name": "Persisted Candidate"})
+        first.persist()
+
+        fresh = rt.open_authoring_session(root)
+        if not check(any(x.get("id") == pending["id"] and x.get("authority_class") == "candidate_semantic" for x in fresh.overview("candidates")["candidates"]), "fresh session lost persisted candidate"):
+            return False
+
+        stale = rt.open_authoring_session(root)
+        fresh.propose_artifact("canon.character", {"id": "character-newer", "name": "Newer"})
+        fresh.persist()
+        stale.propose_artifact("canon.character", {"id": "character-stale", "name": "Stale"})
+        try:
+            stale.persist()
+        except rt.SCENE.PersistenceConflictError:
+            return True
+        return check(False, "stale session overwrote newer Dataset")
+
+
+def task_candidate_withdrawal():
+    rt = _load_runtime()
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        _fixture(root)
+        s = rt.open_authoring_session(root, authorize_transition=True)
+        a = s.propose_artifact("canon.character", {"id": "accepted-sibling", "name": "Accepted"})
+        s.accept_artifact(a["id"])
+        c = s.propose_artifact("canon.character", {"id": "withdraw-me", "name": "Withdraw"})
+        w = s.withdraw_artifact(c["id"], reason="author changed direction")
+        ids = {x.get("id") for x in rt.SCENE._iter_artifacts(s.dataset) if isinstance(x, dict)}
+        return (
+            check(w.get("candidate_status") == "withdrawn", "withdrawal status missing")
+            and check("withdraw-me" not in ids, "withdrawn candidate still governs Dataset")
+            and check("accepted-sibling" in ids, "withdrawal changed accepted sibling")
+        )
+
+
+def task_dataset_boundary():
+    return check(not (ROOT / "dataset").exists(), "story Dataset instance must remain external")
+
+
+def task_manifest_bindings():
+    text = REQS.read_text(encoding="utf-8")
+    parsed = re.findall(r"^### (FS-005-NR-\\d{3}).*?\\n\\*\\*Classification: ([MSB])\\*\\*", text, re.M | re.S)
+    required = {rid for rid, cls in parsed if cls in {"M", "B"}}
+    forbidden = {rid for rid, cls in parsed if cls == "S"}
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    bound = {x.get("requirement") for x in manifest["bindings"] if isinstance(x, dict)}
+    return (
+        check(required <= bound, f"manifest missing FS-005 bindings: {sorted(required - bound)}")
+        and check(not (forbidden & bound), f"manifest binds semantic-only FS-005 requirements: {sorted(forbidden & bound)}")
+    )
+
+
+TASKS = {
+    "fs005-planning-binding": task_planning_binding,
+    "fs005-authoring-runtime": task_authoring_runtime,
+    "fs005-progressive-refinement": task_progressive_refinement,
+    "fs005-author-views": task_views,
+    "fs005-revision-integration": task_revision_integration,
+    "fs005-persistence-reconstruction": task_persistence_reconstruction,
+    "fs005-candidate-withdrawal": task_candidate_withdrawal,
+    "fs005-dataset-boundary": task_dataset_boundary,
+    "fs005-manifest-bindings": task_manifest_bindings,
+}
