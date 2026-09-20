@@ -105,6 +105,15 @@ def _relation_targets(artifact: dict[str, Any]) -> set[str]:
     return targets
 
 
+def _project_artifact(artifact: dict[str, Any]) -> dict[str, Any]:
+    value = copy.deepcopy(artifact)
+    # Revision candidates are workflow state with their own identity/revision/status.
+    # Project them separately so authority and freshness are not flattened into the
+    # accepted artifact that owns their storage.
+    value.pop("revision_candidates", None)
+    return value
+
+
 def _source_record(surface: str, artifact: dict[str, Any]) -> dict[str, Any]:
     artifact_id = artifact.get("id")
     revision = artifact.get("revision")
@@ -113,11 +122,82 @@ def _source_record(surface: str, artifact: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(revision, str) or not revision:
         raise GeneratedViewError(f"{artifact_id}: projected governed source requires durable revision")
     return {
+        "kind": "artifact",
         "id": artifact_id,
         "surface": surface,
         "revision": revision,
         "authority_class": artifact.get("authority_class", "unresolved"),
     }
+
+
+def _revision_candidate_records(
+    surface: str,
+    artifact: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    sources: list[dict[str, Any]] = []
+    projected: list[dict[str, Any]] = []
+    values = artifact.get("revision_candidates", [])
+    if not isinstance(values, list):
+        return sources, projected
+
+    parent_id = artifact.get("id")
+    if not isinstance(parent_id, str) or not parent_id:
+        return sources, projected
+
+    for candidate in values:
+        if not isinstance(candidate, dict):
+            continue
+        candidate_id = candidate.get("id")
+        revision = candidate.get("revision")
+        if not isinstance(candidate_id, str) or not candidate_id:
+            continue
+        if not isinstance(revision, str) or not revision:
+            continue
+        sources.append({
+            "kind": "revision_candidate",
+            "id": candidate_id,
+            "parent_id": parent_id,
+            "surface": surface,
+            "revision": revision,
+            "authority_class": candidate.get("authority_class", "candidate_semantic"),
+            "status": candidate.get("status", "unresolved"),
+        })
+        projected.append({
+            "owner_id": parent_id,
+            "owner_surface": surface,
+            "candidate": copy.deepcopy(candidate),
+        })
+    return sources, projected
+
+
+def _find_revision_candidate(
+    dataset: dict[str, Any],
+    parent_id: str,
+    candidate_id: str,
+) -> tuple[str, dict[str, Any], dict[str, Any]] | None:
+    located = _index(dataset).get(parent_id)
+    if located is None:
+        return None
+    surface, parent = located
+    values = parent.get("revision_candidates", [])
+    if not isinstance(values, list):
+        return None
+    for candidate in values:
+        if isinstance(candidate, dict) and candidate.get("id") == candidate_id:
+            return surface, parent, candidate
+    return None
+
+
+def _source_basis(source: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        source.get("kind", "artifact"),
+        source.get("id"),
+        source.get("parent_id"),
+        source.get("surface"),
+        source.get("revision"),
+        source.get("authority_class"),
+        source.get("status"),
+    )
 
 
 def character_dossier(
@@ -142,22 +222,38 @@ def character_dossier(
         if character_id in _relation_targets(artifact):
             related.append((surface, artifact))
 
-    sources = [_source_record("canon.character", character)]
-    sources.extend(_source_record(surface, artifact) for surface, artifact in related)
-    sources.sort(key=lambda item: (item["surface"], item["id"]))
+    projected_artifacts = [("canon.character", character), *related]
+    sources: list[dict[str, Any]] = []
+    workflow_context: list[dict[str, Any]] = []
+    for surface, artifact in projected_artifacts:
+        sources.append(_source_record(surface, artifact))
+        candidate_sources, candidate_context = _revision_candidate_records(
+            surface,
+            artifact,
+        )
+        sources.extend(candidate_sources)
+        workflow_context.extend(candidate_context)
+    sources.sort(
+        key=lambda item: (
+            item.get("surface", ""),
+            item.get("parent_id", ""),
+            item.get("id", ""),
+            item.get("kind", ""),
+        )
+    )
 
     canon_events = [
-        copy.deepcopy(artifact)
+        _project_artifact(artifact)
         for surface, artifact in related
         if surface == "canon.events"
     ]
     plot_context = [
-        copy.deepcopy(artifact)
+        _project_artifact(artifact)
         for surface, artifact in related
         if surface.startswith("plot.")
     ]
     production_context = [
-        copy.deepcopy(artifact)
+        _project_artifact(artifact)
         for surface, artifact in related
         if surface.startswith("prose.")
     ]
@@ -167,7 +263,7 @@ def character_dossier(
         "story": story_identity,
         "type": "character-dossier",
         "character": character_id,
-        "sources": [(x["id"], x["revision"]) for x in sources],
+        "sources": [_source_basis(x) for x in sources],
     }
     return {
         "id": _stable_id("generated-view", {
@@ -182,16 +278,16 @@ def character_dossier(
         "character_scope": character_id,
         "projection_revision": _stable_id("projection", view_basis),
         "source_attribution": sources,
-        "freshness": {
-            "state": "current",
-            "affected_sources": [],
-        },
+        # Current/stale is intentionally not cached in the view. It is computed
+        # against current governed state with view_freshness().
+        "freshness_basis": "source_attribution",
         "presentation": copy.deepcopy(preferences or {}),
         "content": {
-            "character": copy.deepcopy(character),
+            "character": _project_artifact(character),
             "canon_events": canon_events,
             "plot_context": plot_context,
             "production_context": production_context,
+            "workflow_context": workflow_context,
         },
     }
 
@@ -209,8 +305,55 @@ def view_freshness(dataset: dict[str, Any], view: dict[str, Any]) -> dict[str, A
         if not isinstance(source, dict):
             affected.append({"reason": "invalid-source-attribution"})
             continue
+
+        kind = source.get("kind", "artifact")
         source_id = source.get("id")
         expected_revision = source.get("revision")
+
+        if kind == "revision_candidate":
+            parent_id = source.get("parent_id")
+            if not isinstance(parent_id, str) or not isinstance(source_id, str):
+                affected.append({
+                    "id": source_id,
+                    "reason": "invalid-revision-candidate-attribution",
+                })
+                continue
+            located_candidate = _find_revision_candidate(dataset, parent_id, source_id)
+            if located_candidate is None:
+                affected.append({
+                    "id": source_id,
+                    "parent_id": parent_id,
+                    "reason": "missing",
+                    "expected_revision": expected_revision,
+                    "current_revision": None,
+                })
+                continue
+            surface, _, candidate = located_candidate
+            current_revision = candidate.get("revision")
+            current_status = candidate.get("status", "unresolved")
+            current_authority = candidate.get(
+                "authority_class",
+                "candidate_semantic",
+            )
+            if (
+                current_revision != expected_revision
+                or surface != source.get("surface")
+                or current_status != source.get("status")
+                or current_authority != source.get("authority_class")
+            ):
+                affected.append({
+                    "id": source_id,
+                    "parent_id": parent_id,
+                    "reason": "changed",
+                    "expected_revision": expected_revision,
+                    "current_revision": current_revision,
+                    "expected_status": source.get("status"),
+                    "current_status": current_status,
+                    "expected_surface": source.get("surface"),
+                    "current_surface": surface,
+                })
+            continue
+
         located = current.get(source_id) if isinstance(source_id, str) else None
         if located is None:
             affected.append({
@@ -222,7 +365,12 @@ def view_freshness(dataset: dict[str, Any], view: dict[str, Any]) -> dict[str, A
             continue
         surface, artifact = located
         current_revision = artifact.get("revision")
-        if current_revision != expected_revision or surface != source.get("surface"):
+        current_authority = artifact.get("authority_class", "unresolved")
+        if (
+            current_revision != expected_revision
+            or surface != source.get("surface")
+            or current_authority != source.get("authority_class")
+        ):
             affected.append({
                 "id": source_id,
                 "reason": "changed",
@@ -230,6 +378,8 @@ def view_freshness(dataset: dict[str, Any], view: dict[str, Any]) -> dict[str, A
                 "current_revision": current_revision,
                 "expected_surface": source.get("surface"),
                 "current_surface": surface,
+                "expected_authority_class": source.get("authority_class"),
+                "current_authority_class": current_authority,
             })
 
     return {
@@ -274,22 +424,32 @@ def compare_views(before: dict[str, Any], after: dict[str, Any]) -> dict[str, An
         raise GeneratedViewError("view comparison requires the same generated-view identity")
 
     before_sources = {
-        x.get("id"): x
+        (
+            x.get("kind", "artifact"),
+            x.get("parent_id"),
+            x.get("id"),
+        ): x
         for x in before.get("source_attribution", [])
         if isinstance(x, dict) and isinstance(x.get("id"), str)
     }
     after_sources = {
-        x.get("id"): x
+        (
+            x.get("kind", "artifact"),
+            x.get("parent_id"),
+            x.get("id"),
+        ): x
         for x in after.get("source_attribution", [])
         if isinstance(x, dict) and isinstance(x.get("id"), str)
     }
     changed = []
-    for source_id in sorted(set(before_sources) | set(after_sources)):
-        old = before_sources.get(source_id)
-        new = after_sources.get(source_id)
+    for source_key in sorted(set(before_sources) | set(after_sources)):
+        old = before_sources.get(source_key)
+        new = after_sources.get(source_key)
         if old != new:
             changed.append({
-                "id": source_id,
+                "kind": source_key[0],
+                "parent_id": source_key[1],
+                "id": source_key[2],
                 "before": copy.deepcopy(old),
                 "after": copy.deepcopy(new),
             })
@@ -348,26 +508,33 @@ def propose_view_edit(
     edit: dict[str, Any],
 ) -> dict[str, Any]:
     targets = _normalize_edit_targets(edit)
-    sources = {
+    artifact_sources = {
         source.get("id"): source
         for source in view.get("source_attribution", [])
-        if isinstance(source, dict) and isinstance(source.get("id"), str)
+        if isinstance(source, dict)
+        and source.get("kind", "artifact") == "artifact"
+        and isinstance(source.get("id"), str)
     }
     current = _index(session.dataset)
 
     plans: list[dict[str, Any]] = []
     for target in targets:
         target_id = target["target_id"]
-        if target_id not in sources:
+        if target_id not in artifact_sources:
             raise GeneratedViewError(
-                f"generated-view edit is ambiguous: {target_id} is not an attributed view source"
+                f"generated-view edit is ambiguous: {target_id} is not an attributed governed artifact"
             )
         located = current.get(target_id)
         if located is None:
             raise GeneratedViewError(f"generated-view edit target disappeared: {target_id}")
         surface, artifact = located
-        source = sources[target_id]
-        if artifact.get("revision") != source.get("revision") or surface != source.get("surface"):
+        source = artifact_sources[target_id]
+        if (
+            artifact.get("revision") != source.get("revision")
+            or surface != source.get("surface")
+            or artifact.get("authority_class", "unresolved")
+                != source.get("authority_class")
+        ):
             raise GeneratedViewError(f"generated-view edit target is stale: {target_id}")
 
         authority = artifact.get("authority_class")
