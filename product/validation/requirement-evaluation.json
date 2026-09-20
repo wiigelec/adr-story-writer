@@ -582,6 +582,157 @@
       "tasks": [
         "fs004-dataset-boundary"
       ]
+    },
+    {
+      "requirement": "FS-005-NR-001",
+      "tasks": [
+        "fs005-planning-binding"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-002",
+      "tasks": [
+        "fs005-authoring-runtime",
+        "fs005-persistence-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-003",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-004",
+      "tasks": [
+        "fs005-author-views"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-006",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-007",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-008",
+      "tasks": [
+        "fs005-persistence-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-009",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-010",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-011",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-012",
+      "tasks": [
+        "fs005-authoring-runtime"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-013",
+      "tasks": [
+        "fs005-progressive-refinement"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-014",
+      "tasks": [
+        "fs005-progressive-refinement"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-015",
+      "tasks": [
+        "fs005-progressive-refinement"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-016",
+      "tasks": [
+        "fs005-progressive-refinement"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-017",
+      "tasks": [
+        "fs005-progressive-refinement"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-018",
+      "tasks": [
+        "fs005-author-views"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-019",
+      "tasks": [
+        "fs005-revision-integration"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-020",
+      "tasks": [
+        "fs005-progressive-refinement"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-021",
+      "tasks": [
+        "fs005-candidate-withdrawal"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-022",
+      "tasks": [
+        "fs005-persistence-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-023",
+      "tasks": [
+        "fs005-persistence-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-024",
+      "tasks": [
+        "fs005-persistence-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-027",
+      "tasks": [
+        "fs005-manifest-bindings"
+      ]
+    },
+    {
+      "requirement": "FS-005-NR-028",
+      "tasks": [
+        "fs005-dataset-boundary"
+      ]
     }
   ]
 }
