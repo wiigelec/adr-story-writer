@@ -502,7 +502,7 @@ def _normalize_edit_targets(edit: dict[str, Any]) -> list[dict[str, Any]]:
     return normalized
 
 
-def propose_view_edit(
+def _propose_view_edit_in_place(
     session: Any,
     view: dict[str, Any],
     edit: dict[str, Any],
@@ -585,3 +585,16 @@ def propose_view_edit(
         "source_projection_revision": view.get("projection_revision"),
         "proposals": proposals,
     }
+
+def propose_view_edit(
+    session: Any,
+    view: dict[str, Any],
+    edit: dict[str, Any],
+) -> dict[str, Any]:
+    before = copy.deepcopy(session.dataset)
+    try:
+        return _propose_view_edit_in_place(session, view, edit)
+    except Exception:
+        session.dataset.clear()
+        session.dataset.update(before)
+        raise

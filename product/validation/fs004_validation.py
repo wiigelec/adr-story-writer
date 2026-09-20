@@ -400,6 +400,45 @@ def _perform_reconciliation():
         "downstream": downstream_by_id,
     }
 
+def task_revision_failure_atomicity() -> bool:
+    temp, rt, root, session, package_before = _exercise()
+    try:
+        candidate = session.propose_revision(
+            "event-storm",
+            {"summary": "Atomicity regression candidate."},
+        )
+        target = rt._artifact(session.dataset, "event-storm")
+        stored = next(
+            item
+            for item in target.get("revision_candidates", [])
+            if isinstance(item, dict) and item.get("id") == candidate["id"]
+        )
+        stored["reconciliation_context"] = {
+            "impact_id": "impact-expected-by-candidate",
+        }
+        target["reconciliation"] = {
+            "id": "impact-current-and-different",
+            "state": "review_required",
+        }
+        before = copy.deepcopy(session.dataset)
+
+        try:
+            session.accept_revision(candidate["id"])
+        except rt.SCENE.AcceptanceError:
+            pass
+        else:
+            return check(
+                False,
+                "FS-004: invalid reconciliation context was silently accepted",
+            )
+
+        return check(
+            session.dataset == before,
+            "FS-004: failed revision acceptance partially mutated working Dataset",
+        )
+    finally:
+        temp.cleanup()
+
 def task_impact_reconciliation() -> bool:
     env = _perform_reconciliation()
     try:
@@ -881,6 +920,7 @@ TASKS: dict[str, Callable[[], bool | None]] = {
     "fs004-planning-binding": task_planning_binding,
     "fs004-reconciliation-contract": task_reconciliation_contract,
     "fs004-revision-runtime": task_revision_runtime,
+    "fs004-revision-failure-atomicity": task_revision_failure_atomicity,
     "fs004-impact-reconciliation": task_impact_reconciliation,
     "fs004-package-readiness": task_package_readiness,
     "fs004-persistence-reconstruction": task_persistence_reconstruction,
