@@ -513,6 +513,17 @@ def load_fs005_validation():
 
 TASKS.update(load_fs005_validation().TASKS)
 
+def load_fs006_validation():
+    path = ROOT / "product" / "validation" / "fs006_validation.py"
+    spec = importlib.util.spec_from_file_location("fs006_validation", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("cannot load FS-006 Validation")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+TASKS.update(load_fs006_validation().TASKS)
+
 def load_manifest() -> dict:
     try:
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
