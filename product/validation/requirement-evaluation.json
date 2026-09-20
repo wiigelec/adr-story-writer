@@ -733,6 +733,122 @@
       "tasks": [
         "fs005-dataset-boundary"
       ]
+    },
+    {
+      "requirement": "FS-006-NR-001",
+      "tasks": [
+        "fs006-planning-binding"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-002",
+      "tasks": [
+        "fs006-generated-views"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-003",
+      "tasks": [
+        "fs006-generated-views"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-004",
+      "tasks": [
+        "fs006-generated-views",
+        "fs006-freshness-regeneration"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-005",
+      "tasks": [
+        "fs006-generated-views"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-006",
+      "tasks": [
+        "fs006-generated-views"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-007",
+      "tasks": [
+        "fs006-freshness-regeneration"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-008",
+      "tasks": [
+        "fs006-freshness-regeneration"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-010",
+      "tasks": [
+        "fs006-presentation-comparison"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-012",
+      "tasks": [
+        "fs006-edit-routing"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-013",
+      "tasks": [
+        "fs006-freshness-regeneration",
+        "fs006-edit-routing"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-014",
+      "tasks": [
+        "fs006-edit-routing"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-015",
+      "tasks": [
+        "fs006-edit-routing"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-016",
+      "tasks": [
+        "fs006-presentation-comparison"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-017",
+      "tasks": [
+        "fs006-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-018",
+      "tasks": [
+        "fs006-reconstruction"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-019",
+      "tasks": [
+        "fs006-edit-routing"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-022",
+      "tasks": [
+        "fs006-manifest-bindings"
+      ]
+    },
+    {
+      "requirement": "FS-006-NR-023",
+      "tasks": [
+        "fs006-dataset-boundary"
+      ]
     }
   ]
 }

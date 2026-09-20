@@ -26,6 +26,18 @@ def _load_revision_runtime():
 REV = _load_revision_runtime()
 SCENE = REV.SCENE
 
+def _load_generated_view_runtime():
+    path = Path(__file__).resolve().with_name("generated_view_runtime.py")
+    spec = importlib.util.spec_from_file_location("story_writer_generated_views_fs006", path)
+    if spec is None or spec.loader is None:
+        raise AuthoringRuntimeError("cannot load generated-view runtime")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+GV = _load_generated_view_runtime()
+
 
 def _canonical(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -497,6 +509,24 @@ class AuthoringSession(REV.RevisionSession):
 
     def withdraw_artifact(self, artifact_id, *, reason=None):
         return withdraw_artifact(self.dataset, artifact_id, reason=reason)
+
+    def character_dossier(self, character_id, *, preferences=None):
+        return GV.character_dossier(self.dataset, character_id, preferences=preferences)
+
+    def view_freshness(self, view):
+        return GV.view_freshness(self.dataset, view)
+
+    def refresh_view(self, view):
+        return GV.refresh_view(self.dataset, view)
+
+    def apply_view_preferences(self, view, preferences):
+        return GV.apply_presentation_preferences(view, preferences)
+
+    def compare_views(self, before, after):
+        return GV.compare_views(before, after)
+
+    def propose_view_edit(self, view, edit):
+        return GV.propose_view_edit(self, view, edit)
 
     def readiness(self, scene_id):
         return readiness(self.dataset, scene_id)
