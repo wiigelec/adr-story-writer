@@ -112,6 +112,15 @@ def task_authoring_runtime():
         both = s.accept_artifacts([dependent["id"], dep["id"]])
         if not check(all(x["authority_class"] == "accepted_semantic" for x in both), "coordinated acceptance failed"):
             return False
+        coordination = [x.get("acceptance", {}).get("coordination") for x in both]
+        if not check(
+            all(isinstance(x, dict) for x in coordination)
+            and len({x["decision_id"] for x in coordination}) == 1
+            and all(x.get("operation") == "coordinated_acceptance" for x in coordination)
+            and all(x.get("related_scopes") == sorted([dep["id"], dependent["id"]]) for x in coordination),
+            "coordinated acceptance did not retain one durable explicit author decision",
+        ):
+            return False
         dep_current = rt.REV._artifact(s.dataset, dep["id"])
         dependent_current = rt.REV._artifact(s.dataset, dependent["id"])
         relation = dependent_current["dependency_relations"][0]
@@ -246,10 +255,39 @@ def task_persistence_reconstruction():
         _fixture(root)
         first = _develop(rt, root)
         pending = first.propose_artifact("canon.character", {"id": "character-persisted-candidate", "name": "Persisted Candidate"})
+        coordinated_semantic = first.propose_artifact("canon.character", {
+            "id": "coordinated-persisted-semantic", "name": "Coordinated",
+        })
+        coordinated_production = first.propose_artifact("prose.modes", {
+            "id": "coordinated-persisted-production",
+            "viewpoint": "close third through Coordinated",
+        }, dependencies=[coordinated_semantic["id"]])
+        accepted_pair = first.accept_artifacts([
+            coordinated_production["id"],
+            coordinated_semantic["id"],
+        ])
+        coordination_id = accepted_pair[0]["acceptance"]["coordination"]["decision_id"]
+        if not check(
+            accepted_pair[0]["acceptance"]["operation"] == "production_approval"
+            and accepted_pair[1]["acceptance"]["operation"] == "semantic_acceptance"
+            and accepted_pair[1]["acceptance"]["coordination"]["decision_id"] == coordination_id,
+            "coordinated acceptance lost distinct acceptance purposes",
+        ):
+            return False
         first.persist()
 
         fresh = rt.open_authoring_session(root)
         if not check(any(x.get("id") == pending["id"] and x.get("authority_class") == "candidate_semantic" for x in fresh.overview("candidates")["candidates"]), "fresh session lost persisted candidate"):
+            return False
+        fresh_semantic = rt.REV._artifact(fresh.dataset, coordinated_semantic["id"])
+        fresh_production = rt.REV._artifact(fresh.dataset, coordinated_production["id"])
+        if not check(
+            fresh_semantic.get("acceptance", {}).get("coordination", {}).get("decision_id") == coordination_id
+            and fresh_production.get("acceptance", {}).get("coordination", {}).get("decision_id") == coordination_id
+            and fresh_semantic["acceptance"]["coordination"].get("related_scopes")
+                == sorted([coordinated_semantic["id"], coordinated_production["id"]]),
+            "fresh session lost coordinated-acceptance provenance",
+        ):
             return False
 
         stale = rt.open_authoring_session(root)

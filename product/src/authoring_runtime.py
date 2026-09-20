@@ -364,6 +364,25 @@ def accept_artifacts(dataset: dict[str, Any], artifact_ids: list[str]):
             "accepted_revision": accepted_revision,
         }
 
+    coordination = None
+    if len(artifacts) > 1:
+        members = sorted(
+            (
+                {
+                    "id": artifact["id"],
+                    "candidate_revision": transitions[artifact["id"]]["candidate_revision"],
+                    "accepted_revision": transitions[artifact["id"]]["accepted_revision"],
+                }
+                for artifact in artifacts
+            ),
+            key=lambda member: member["id"],
+        )
+        coordination = {
+            "operation": "coordinated_acceptance",
+            "decision_id": _stable_id("coordinated-acceptance", {"members": members}),
+            "related_scopes": [member["id"] for member in members],
+        }
+
     for artifact in artifacts:
         transition = transitions[artifact["id"]]
         artifact["authority_class"] = transition["accepted_authority"]
@@ -375,6 +394,8 @@ def accept_artifacts(dataset: dict[str, Any], artifact_ids: list[str]):
             "candidate_revision": transition["candidate_revision"],
             "accepted_revision": transition["accepted_revision"],
         }
+        if coordination is not None:
+            artifact["acceptance"]["coordination"] = copy.deepcopy(coordination)
         artifact.pop("candidate_status", None)
 
     # Only dependencies accepted in this same coordinated operation need their
