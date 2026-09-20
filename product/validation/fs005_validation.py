@@ -107,8 +107,42 @@ def task_authoring_runtime():
             pass
         else:
             return check(False, "candidate dependency bypassed closure")
-        both = s.accept_artifacts([dep["id"], dependent["id"]])
-        return check(all(x["authority_class"] == "accepted_semantic" for x in both), "coordinated acceptance failed")
+        # Reverse dependency order deliberately: coordinated acceptance must be
+        # atomic/order-independent and rebase the relation to the accepted revision.
+        both = s.accept_artifacts([dependent["id"], dep["id"]])
+        if not check(all(x["authority_class"] == "accepted_semantic" for x in both), "coordinated acceptance failed"):
+            return False
+        dep_current = rt.REV._artifact(s.dataset, dep["id"])
+        dependent_current = rt.REV._artifact(s.dataset, dependent["id"])
+        relation = dependent_current["dependency_relations"][0]
+        if not check(
+            relation["target_revision"] == dep_current["revision"]
+            and relation["authority_basis"] == "accepted",
+            "coordinated acceptance left a stale/order-dependent relation",
+        ):
+            return False
+        try:
+            rt.REV.ensure_artifact_current(s.dataset, dependent_current)
+        except rt.SCENE.SceneNotReadyError:
+            return check(False, "coordinated acceptance produced immediately stale dependent")
+
+        # A dependent candidate must not silently rebase onto an upstream revision
+        # accepted after the dependent candidate was proposed.
+        upstream = s.propose_artifact("canon.character", {
+            "id": "revision-upstream", "name": "Before",
+        })
+        s.accept_artifact(upstream["id"])
+        stale_dependent = s.propose_artifact("plot.sequence", {
+            "id": "stale-dependent", "ordinal": 3, "viewpoint": "character-one",
+            "entry": "Start.", "exit": "Stop.",
+        }, dependencies=[upstream["id"]])
+        revision = s.propose_revision(upstream["id"], {"name": "After"})
+        s.accept_revision(revision["id"])
+        try:
+            s.accept_artifact(stale_dependent["id"])
+        except rt.SCENE.AcceptanceError:
+            return True
+        return check(False, "dependent candidate silently rebased onto changed upstream revision")
 
 
 def task_progressive_refinement():

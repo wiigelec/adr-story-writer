@@ -198,6 +198,18 @@ def _material_blockers(dataset: dict[str, Any], artifact: dict[str, Any], coordi
         except AuthoringRuntimeError:
             blockers.append(f"missing dependency {target_id}")
             continue
+
+        expected_revision = relation.get("target_revision")
+        if not isinstance(expected_revision, str) or not expected_revision:
+            blockers.append(f"dependency {target_id} has unresolved revision")
+            continue
+        if target.get("revision") != expected_revision:
+            blockers.append(f"dependency {target_id} is stale")
+            continue
+        if REV._blocked(target):
+            blockers.append(f"dependency {target_id} has unresolved reconciliation")
+            continue
+
         basis = _authority_basis(target)
         if basis == "accepted":
             continue
@@ -217,7 +229,9 @@ def _material_blockers(dataset: dict[str, Any], artifact: dict[str, Any], coordi
                 except AuthoringRuntimeError:
                     blockers.append(f"missing target scope {target_scope}")
                 else:
-                    if _authority_basis(target) != "accepted" and target_scope not in coordinated_ids:
+                    if REV._blocked(target):
+                        blockers.append(f"target scope {target_scope} has unresolved reconciliation")
+                    elif _authority_basis(target) != "accepted" and target_scope not in coordinated_ids:
                         blockers.append(f"target scope {target_scope} is not accepted in scope")
     return blockers
 
@@ -295,21 +309,26 @@ def revise_candidate(dataset: dict[str, Any], artifact_id: str, changes: dict[st
         raise AuthoringRuntimeError("candidate is not pending")
     if not isinstance(changes, dict) or not changes:
         raise AuthoringRuntimeError("candidate refinement requires changes")
-    protected = {"id", "surface", "authority_class", "revision"}
+    protected = {"id", "surface", "authority_class", "revision", "dependency_relations"}
     if protected & set(changes):
-        raise AuthoringRuntimeError("candidate refinement cannot replace governed identity fields")
+        raise AuthoringRuntimeError("candidate refinement cannot replace governed identity/control fields")
+    normalized_changes = copy.deepcopy(changes)
+    if "dependencies" in normalized_changes:
+        dep_ids, relations = _normalize_dependencies(dataset, normalized_changes["dependencies"])
+        normalized_changes["dependencies"] = dep_ids
+        normalized_changes["dependency_relations"] = relations
     history = artifact.setdefault("candidate_revision_history", [])
     if not isinstance(history, list):
         raise AuthoringRuntimeError("candidate_revision_history must be an array")
     previous = copy.deepcopy(artifact)
     previous.pop("candidate_revision_history", None)
     history.append(previous)
-    for key, value in changes.items():
+    for key, value in normalized_changes.items():
         artifact[key] = copy.deepcopy(value)
     artifact["revision"] = _stable_id("candidate-revision", {
         "id": artifact["id"],
         "prior_revision": previous["revision"],
-        "changes": changes,
+        "changes": normalized_changes,
     })
     return copy.deepcopy(artifact)
 
@@ -319,6 +338,7 @@ def accept_artifacts(dataset: dict[str, Any], artifact_ids: list[str]):
         raise SCENE.AcceptanceError("acceptance requires explicit artifact scope")
     if any(not isinstance(x, str) or not x for x in artifact_ids) or len(set(artifact_ids)) != len(artifact_ids):
         raise SCENE.AcceptanceError("invalid or duplicate acceptance scope")
+
     scope = set(artifact_ids)
     artifacts = [_find(dataset, artifact_id) for artifact_id in artifact_ids]
     for artifact in artifacts:
@@ -328,36 +348,50 @@ def accept_artifacts(dataset: dict[str, Any], artifact_ids: list[str]):
         if blockers:
             raise SCENE.AcceptanceError(f"{artifact.get('id')}: acceptance closure failed: {blockers}")
 
-    accepted = []
+    # Compute the whole coordinated transition before mutating anything.
+    transitions = {}
     for artifact in artifacts:
         candidate_revision = artifact["revision"]
         accepted_authority = _accepted_authority(artifact["surface"])
-        artifact["authority_class"] = accepted_authority
-        artifact["revision"] = _stable_id("accepted-revision", {
+        accepted_revision = _stable_id("accepted-revision", {
             "id": artifact["id"],
             "candidate_revision": candidate_revision,
             "authority_class": accepted_authority,
         })
-        artifact["accepted_from_candidate_revision"] = candidate_revision
-        artifact["acceptance"] = {
-            "operation": "semantic_acceptance" if accepted_authority == "accepted_semantic" else "production_approval",
-            "scope": artifact["id"],
+        transitions[artifact["id"]] = {
             "candidate_revision": candidate_revision,
-            "accepted_revision": artifact["revision"],
+            "accepted_authority": accepted_authority,
+            "accepted_revision": accepted_revision,
+        }
+
+    for artifact in artifacts:
+        transition = transitions[artifact["id"]]
+        artifact["authority_class"] = transition["accepted_authority"]
+        artifact["revision"] = transition["accepted_revision"]
+        artifact["accepted_from_candidate_revision"] = transition["candidate_revision"]
+        artifact["acceptance"] = {
+            "operation": "semantic_acceptance" if transition["accepted_authority"] == "accepted_semantic" else "production_approval",
+            "scope": artifact["id"],
+            "candidate_revision": transition["candidate_revision"],
+            "accepted_revision": transition["accepted_revision"],
         }
         artifact.pop("candidate_status", None)
+
+    # Only dependencies accepted in this same coordinated operation need their
+    # candidate revision advanced to the corresponding accepted revision.
+    for artifact in artifacts:
         relations = artifact.get("dependency_relations")
-        if isinstance(relations, list):
-            for relation in relations:
-                if not isinstance(relation, dict):
-                    continue
-                target_id = relation.get("target_id")
-                if isinstance(target_id, str):
-                    target = _find(dataset, target_id)
-                    relation["target_revision"] = target.get("revision")
-                    relation["authority_basis"] = "accepted"
-        accepted.append(copy.deepcopy(artifact))
-    return accepted
+        if not isinstance(relations, list):
+            continue
+        for relation in relations:
+            if not isinstance(relation, dict):
+                continue
+            target_id = relation.get("target_id")
+            if target_id in transitions:
+                relation["target_revision"] = transitions[target_id]["accepted_revision"]
+                relation["authority_basis"] = "accepted"
+
+    return [copy.deepcopy(artifact) for artifact in artifacts]
 
 
 def withdraw_artifact(dataset: dict[str, Any], artifact_id: str, *, reason=None):
