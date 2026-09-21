@@ -105,6 +105,33 @@ Guidance may be global, scoped, layered, or absent where unnecessary.
 
 The exact storage representation is a Planning decision.
 
+## General Realization-Quality Guidance
+
+The Ruleset may define general realization-quality guidance that applies
+independently of author-specific Prose guidance when recurring generator
+failure patterns materially reduce reliable prose realization.
+
+General realization-quality guidance is Product-owned production control.
+
+It may constrain recurrent generation tendencies such as unnecessary
+restatement, over-explanation, generic filler, mechanically patterned syntax,
+automatic physical micro-reactions, uniformly polished dialogue, unjustified
+ornament, or other defaults that interfere with bounded realization.
+
+General realization-quality guidance is not an author-style profile and must not
+be represented as evidence about an author's personal style merely because both
+affect prose realization.
+
+Such guidance may participate as a distinguishable layer in a resolved style
+projection together with applicable author-specific and local guidance.
+
+The guidance must operate as restraint rather than as an absolute prohibition
+when the same literary device is justified by accepted author guidance, local
+scene needs, or explicit author intent.
+
+General realization-quality guidance does not create Canon, Plot, or Manuscript
+authority and must not silently decide consequential story meaning.
+
 ## Progressive Prose Refinement
 
 Prose work may be progressively refined before final language generation.
@@ -130,6 +157,17 @@ production-approved for a defined task.
 Production approval means the artifact is approved to govern the identified
 production work. It does not grant Canon, Plot, or Manuscript authority and does
 not silently accept candidate semantic dependencies.
+
+Persistent Prose guidance that is revised after production approval must remain
+governed as a new candidate revision until explicitly approved for production.
+
+When the same persistent guidance concept continues across revisions, the
+Product should preserve stable identity while distinguishing the new content
+revision from the previously approved revision.
+
+Previously used production contracts and generation packages remain governed by
+the guidance revision frozen into them; later guidance revision must not
+retroactively change earlier generation context.
 
 No named structure is mandatory merely because it appears in this Design.
 
