@@ -11,7 +11,52 @@
         "internal": "Viewpoint-character thought, perception, judgment, memory, feeling, or other internal experience."
       }
     },
-    "pseudo_prose": "Near-prose realization establishing order, paragraph-scale flow, emphasis, transitions, viewpoint handling, and rough wording without requiring final literary polish."
+    "pseudo_prose": "Near-prose realization establishing order, paragraph-scale flow, emphasis, transitions, viewpoint handling, and rough wording without requiring final literary polish.",
+    "style_profiles": "Persistent author-reviewed Prose realization guidance derived from representative author samples or supplied directly by the author. Style profiles are production control, not Canon or Plot truth."
+  },
+  "generation_quality_guidance": {
+    "semantic_restraint": [
+      "Trust concrete action, dialogue, and established context to carry meaning when the implication is already recoverable.",
+      "Do not append interpretive conclusions merely to explain what the preceding action or image signifies.",
+      "Do not convert every physical action into a symbolic or emotional statement."
+    ],
+    "pattern_restraint": [
+      "Avoid habitual contrast templates such as repeated 'not X but Y' constructions unless the contrast is genuinely useful.",
+      "Avoid excessive three-part lists, artificial parallelism, and mechanically balanced sentences.",
+      "Once an observation, procedure, or conclusion is sufficiently established, advance the scene instead of repeatedly re-proving it."
+    ],
+    "physical_reaction_restraint": [
+      "Do not use breath catching, jaw tightening, fists clenching, hearts pounding, eyes narrowing, or similar micro-reactions as automatic emotional filler.",
+      "Use bodily reaction when it is specific, consequential, or natural to the viewpoint and moment."
+    ],
+    "description_restraint": [
+      "Prefer concrete sensory or situational detail over generic atmospheric filler.",
+      "Do not add sensory detail, gestures, or scenic ornament merely to make every paragraph feel rich.",
+      "Keep description subordinate to viewpoint, action, tension, or meaning unless the accepted style calls for otherwise."
+    ],
+    "dialogue_restraint": [
+      "Do not make every line of dialogue polished, witty, complete, or thematically precise.",
+      "Allow appropriate indirectness, interruption, hesitation, repetition, misunderstanding, and brevity.",
+      "Avoid explaining in narration what dialogue and action have already made clear."
+    ],
+    "style_restraint": [
+      "Use em dashes, fragments, rhetorical questions, metaphor, and sentence interruption when justified rather than as default signals of intensity.",
+      "Avoid forced poetic imagery or aphoristic closing lines that are more stylized than the surrounding voice.",
+      "Do not manufacture ominous or emotional intensity merely because a scene is important."
+    ],
+    "variation": [
+      "Preserve natural variation in sentence length and paragraph shape without mechanically alternating forms.",
+      "Let pacing emerge from the scene's action, thought, dialogue, and emphasis rather than from a repeated model template."
+    ]
+  },
+  "style_resolution": {
+    "layers": [
+      "generation_quality_guidance",
+      "author_style_guidance",
+      "local_style_guidance"
+    ],
+    "material_conflict_rule": "A material semantic conflict requires review; greater locality does not by itself authorize contradiction of accepted broader guidance.",
+    "raw_author_samples_are_not_routine_generation_context": true
   },
   "refinement": [
     "beats",
@@ -29,6 +74,8 @@
     "Prose may add non-consequential sensory and expressive detail necessary for readable fiction.",
     "Prose must not silently introduce consequential Canon facts, resolve unapproved Plot choices, or contradict accepted upstream artifacts.",
     "Generation requires an explicit stopping boundary and a bounded governing package.",
-    "Generated prose remains candidate until an author-governed Manuscript acceptance operation."
+    "Generated prose remains candidate until an author-governed Manuscript acceptance operation.",
+    "Author style profiles and generation-quality guidance govern realization only and do not acquire Canon, Plot, or Manuscript authority.",
+    "Ordinary generation uses resolved derived guidance rather than requiring full source author samples in the generation package."
   ]
 }

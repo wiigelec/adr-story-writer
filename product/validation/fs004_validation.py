@@ -884,7 +884,7 @@ def task_ruleset_compatibility() -> bool:
         "ruleset_binding"
     ]
     return (
-        check(identity.get("version") == "0.3.0", "FS-004: Ruleset identity did not advance for new governed semantics")
+        check(identity.get("version") == "0.4.0", "FS-004: Ruleset identity did not advance for new governed semantics")
         and check(current == identity, "FS-004: compatibility current binding differs from Ruleset identity")
         and check(template.get("ruleset_binding") == current, "FS-004: Dataset template binding is stale")
         and check(migration_target == current, "FS-004: supported legacy migration does not land on current Ruleset")
