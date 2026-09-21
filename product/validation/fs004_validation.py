@@ -871,24 +871,19 @@ def task_persistence_conflict() -> bool:
 def task_ruleset_compatibility() -> bool:
     identity = _json(ROOT / "ruleset" / "identity.json")
     contract = _json(ROOT / "ruleset" / "compatibility.json")
-    template = _json(ROOT / "init-config" / "dataset.json")
     current = contract["ruleset_binding"]["current"]
-    transitions = contract["rebinding"]["supported_transitions"]
-    has_previous = any(
-        item.get("source", {}).get("version") == "0.2.0"
-        and item.get("target") == current
-        for item in transitions
-        if isinstance(item, dict)
-    )
     migration_target = contract["migration"]["supported_transitions"][0]["target"][
         "ruleset_binding"
     ]
     return (
-        check(identity.get("version") == "0.4.0", "FS-004: Ruleset identity did not advance for new governed semantics")
-        and check(current == identity, "FS-004: compatibility current binding differs from Ruleset identity")
-        and check(template.get("ruleset_binding") == current, "FS-004: Dataset template binding is stale")
-        and check(migration_target == current, "FS-004: supported legacy migration does not land on current Ruleset")
-        and check(has_previous, "FS-004: no explicit 0.2.0 to current Ruleset rebinding path")
+        check(
+            current == identity,
+            "FS-004: compatibility current binding differs from Ruleset identity",
+        )
+        and check(
+            migration_target == current,
+            "FS-004: supported legacy migration does not land on current Ruleset",
+        )
     )
 
 

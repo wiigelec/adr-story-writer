@@ -6,7 +6,7 @@
   "ruleset_binding": {
     "application": "adr-story-writer",
     "component": "ruleset",
-    "version": "0.4.0"
+    "version": "0.3.0"
   },
   "compatibility_history": [],
   "instance": {
@@ -31,11 +31,7 @@
   "prose": {
     "beats": {},
     "modes": {},
-    "pseudo_prose": {},
-    "style_profiles": {},
-    "style_selection": {
-      "default_profile": null
-    }
+    "pseudo_prose": {}
   },
   "chapters": {
     "format": "markdown",

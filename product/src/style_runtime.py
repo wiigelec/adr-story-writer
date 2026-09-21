@@ -69,20 +69,37 @@ def _normalize_source_samples(
 ) -> list[dict[str, Any]]:
     if not isinstance(source_samples, list) or not source_samples:
         raise StyleRuntimeError("style profile requires at least one source sample reference")
-    allowed_source_fields = {"kind", "reference", "label", "revision", "digest"}
+
+    field_limits = {
+        "kind": 128,
+        "reference": 2048,
+        "label": 512,
+        "revision": 256,
+        "digest": 256,
+    }
     normalized_sources = []
     for source in source_samples:
         if not isinstance(source, dict):
             raise StyleRuntimeError("style source reference must be an object")
-        if not isinstance(source.get("reference"), str) or not source["reference"]:
+        reference = source.get("reference")
+        if not isinstance(reference, str) or not reference.strip():
             raise StyleRuntimeError("style source reference requires reference")
-        normalized_sources.append(
-            {
-                key: copy.deepcopy(source[key])
-                for key in allowed_source_fields
-                if key in source
-            }
-        )
+
+        normalized = {}
+        for key, limit in field_limits.items():
+            if key not in source:
+                continue
+            value = source[key]
+            if not isinstance(value, str):
+                raise StyleRuntimeError(
+                    f"style source provenance field {key} must be a string"
+                )
+            if len(value) > limit:
+                raise StyleRuntimeError(
+                    f"style source provenance field {key} exceeds {limit} characters"
+                )
+            normalized[key] = value
+        normalized_sources.append(normalized)
     return normalized_sources
 
 
@@ -228,17 +245,74 @@ def resolve_style_projection(
     if not isinstance(local, list):
         raise StyleRuntimeError("local style guidance must be an array")
 
-    conflicts = [] if material_conflicts is None else copy.deepcopy(material_conflicts)
-    if not isinstance(conflicts, list):
+    raw_conflicts = [] if material_conflicts is None else material_conflicts
+    if not isinstance(raw_conflicts, list):
         raise StyleRuntimeError("material style conflicts must be an array")
-    for conflict in conflicts:
+    if len(raw_conflicts) > 32:
+        raise StyleRuntimeError("material style conflicts exceed the bounded limit")
+
+    allowed_conflict_fields = {"description", "layers", "references"}
+    allowed_layers = {
+        "generation_quality_guidance",
+        "author_style_guidance",
+        "local_style_guidance",
+    }
+    conflicts = []
+    for conflict in raw_conflicts:
         if not isinstance(conflict, dict):
             raise StyleRuntimeError("material style conflict must be an object")
-        description = conflict.get("description")
-        if not isinstance(description, str) or not description.strip():
+        unknown = set(conflict) - allowed_conflict_fields
+        if unknown:
             raise StyleRuntimeError(
-                "material style conflict requires a non-empty description"
+                f"material style conflict has unsupported fields: {sorted(unknown)}"
             )
+
+        description = conflict.get("description")
+        if (
+            not isinstance(description, str)
+            or not description.strip()
+            or len(description) > 2048
+        ):
+            raise StyleRuntimeError(
+                "material style conflict requires a non-empty description "
+                "of at most 2048 characters"
+            )
+
+        normalized_conflict = {"description": description}
+
+        if "layers" in conflict:
+            layers = conflict["layers"]
+            if (
+                not isinstance(layers, list)
+                or len(layers) > 3
+                or any(
+                    not isinstance(layer, str) or layer not in allowed_layers
+                    for layer in layers
+                )
+            ):
+                raise StyleRuntimeError(
+                    "material style conflict layers must be known style layers"
+                )
+            normalized_conflict["layers"] = copy.deepcopy(layers)
+
+        if "references" in conflict:
+            references = conflict["references"]
+            if (
+                not isinstance(references, list)
+                or len(references) > 32
+                or any(
+                    not isinstance(reference, str)
+                    or not reference.strip()
+                    or len(reference) > 2048
+                    for reference in references
+                )
+            ):
+                raise StyleRuntimeError(
+                    "material style conflict references must be bounded non-empty strings"
+                )
+            normalized_conflict["references"] = copy.deepcopy(references)
+
+        conflicts.append(normalized_conflict)
 
     return {
         "status": "unresolved" if conflicts else "ready",

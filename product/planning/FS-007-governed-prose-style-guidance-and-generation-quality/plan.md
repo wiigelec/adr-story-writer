@@ -163,8 +163,10 @@ Ruleset identity remains `0.4.0`; Dataset schema remains version 1.
 Meaning-preserving rebinding paths from supported earlier Rulesets, including
 `0.3.0 -> 0.4.0`, remain applicable.
 
-The Dataset initialization template remains bound to `0.4.0` and initializes
-empty style state.
+Retained `init-config/` construction inputs are immutable construction
+provenance and are not updated to track the current runtime Ruleset. FS-007
+optional style state is initialized by the runtime on first style mutation or
+persisted by compatible Dataset tooling when present.
 
 No FS-007 Dataset migration is introduced.
 

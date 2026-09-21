@@ -133,6 +133,25 @@ def task_planning_binding():
 def task_style_state():
     dataset = _dataset()
     raw_sample = "This exact source manuscript text must not enter generation packages."
+    for invalid_sources in (
+        [{"reference": "drive:bad", "label": {"raw_sample": raw_sample}}],
+        [{"reference": "drive:bad", "label": "x" * 513}],
+    ):
+        try:
+            STYLE.propose_style_profile(
+                _dataset(),
+                profile_id="invalid-profile",
+                guidance={"voice": ["direct"]},
+                source_samples=invalid_sources,
+            )
+        except STYLE.StyleRuntimeError:
+            pass
+        else:
+            return check(
+                False,
+                "style profile accepted unbounded source provenance metadata",
+            )
+
     candidate = STYLE.propose_style_profile(
         dataset,
         profile_id="author-default",
@@ -318,6 +337,25 @@ def task_style_revision():
 
 def task_style_conflicts():
     dataset = _dataset()
+    try:
+        STYLE.resolve_style_projection(
+            dataset,
+            scene_id="scene-1",
+            material_conflicts=[
+                {
+                    "description": "bounded conflict test",
+                    "payload": {"raw": "must not survive"},
+                }
+            ],
+        )
+    except STYLE.StyleRuntimeError:
+        pass
+    else:
+        return check(
+            False,
+            "material style conflict accepted unsupported unbounded payload",
+        )
+
     conflicts = [
         {
             "description": (

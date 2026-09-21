@@ -2,7 +2,7 @@
   "identity": {
     "application": "adr-story-writer",
     "component": "ruleset",
-    "version": "0.4.0"
+    "version": "0.2.0"
   },
   "authority": {
     "dataset_is_persisted_story_authority": true,
