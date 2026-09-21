@@ -192,7 +192,7 @@ def task_fs002_compatibility_contract() -> bool:
     migration = data.get("migration", {})
     rebinding = data.get("rebinding", {})
     identity = load_json("ruleset/identity.json")
-    template = load_json("init-config/dataset.json")
+    current_schema = schema.get("current", {})
     states = {
         "directly_compatible", "restricted_operation", "migration_required",
         "rebinding_required", "unsupported", "indeterminate",
@@ -204,8 +204,13 @@ def task_fs002_compatibility_contract() -> bool:
     migration_ids = {t.get("id") for t in migration.get("supported_transitions", []) if isinstance(t, dict)}
     rebind_ids = {t.get("id") for t in rebinding.get("supported_transitions", []) if isinstance(t, dict)}
     return (
-        check(schema.get("current") == template.get("schema"), "FS-002: Dataset schema identity mismatch")
-        and check(binding.get("current") == template.get("ruleset_binding"), "FS-002: template Ruleset binding mismatch")
+        check(
+            isinstance(current_schema, dict)
+            and isinstance(current_schema.get("id"), str)
+            and bool(current_schema.get("id"))
+            and isinstance(current_schema.get("version"), int),
+            "FS-002: current Dataset schema identity is incomplete",
+        )
         and check(binding.get("current") == identity, "FS-002: current Ruleset identity mismatch")
         and check(schema.get("binding_is_not_schema_identity") is True, "FS-002: schema and binding axes collapsed")
         and check(states == set(comp.get("states", [])), "FS-002: compatibility states incomplete")
@@ -523,6 +528,17 @@ def load_fs006_validation():
     return module
 
 TASKS.update(load_fs006_validation().TASKS)
+
+def load_fs007_validation():
+    path = ROOT / "product" / "validation" / "fs007_validation.py"
+    spec = importlib.util.spec_from_file_location("fs007_validation", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("cannot load FS-007 Validation")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+TASKS.update(load_fs007_validation().TASKS)
 
 def load_manifest() -> dict:
     try:

@@ -11,6 +11,7 @@
       "entry_exit_conditions",
       "prose_guidance",
       "style_voice",
+      "resolved_style_projection",
       "protected_material",
       "creative_allowance",
       "prohibited_consequential_invention",
@@ -26,6 +27,7 @@
       "target_scope",
       "stop_boundary",
       "selected_revisions",
+      "style_projection",
       "creative_allowance",
       "prohibited_invention",
       "provenance"

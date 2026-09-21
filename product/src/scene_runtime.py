@@ -47,6 +47,19 @@ def _load_compatibility_module():
 COMPAT = _load_compatibility_module()
 
 
+def _load_style_module():
+    path = Path(__file__).resolve().with_name("style_runtime.py")
+    spec = importlib.util.spec_from_file_location("story_writer_style", path)
+    if spec is None or spec.loader is None:
+        raise SceneRuntimeError("cannot load style runtime")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+STYLE = _load_style_module()
+
+
 def _canonical(value: Any) -> bytes:
     return json.dumps(
         value,
@@ -148,6 +161,15 @@ class TreeDatasetBackend:
             if path.is_file():
                 dataset[key] = _read_value(path)
 
+        prose_optional = {
+            "style_profiles": "prose/style-profiles.json",
+            "style_selection": "prose/style-selection.json",
+        }
+        for key, rel in prose_optional.items():
+            path = d / rel
+            if path.is_file():
+                dataset["prose"][key] = _read_value(path)
+
         files = dataset["chapters"].get("files")
         if not isinstance(files, list):
             raise SceneRuntimeError("chapters.files must be an array")
@@ -176,6 +198,16 @@ class TreeDatasetBackend:
         _write_json(target / "prose/beats.json", dataset["prose"]["beats"])
         _write_json(target / "prose/modes.json", dataset["prose"]["modes"])
         _write_json(target / "prose/pseudo-prose.json", dataset["prose"]["pseudo_prose"])
+        if "style_profiles" in dataset["prose"]:
+            _write_json(
+                target / "prose/style-profiles.json",
+                dataset["prose"]["style_profiles"],
+            )
+        if "style_selection" in dataset["prose"]:
+            _write_json(
+                target / "prose/style-selection.json",
+                dataset["prose"]["style_selection"],
+            )
 
         chapters = copy.deepcopy(dataset["chapters"])
         files = chapters.get("files", [])
@@ -555,7 +587,12 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         ),
     }
 
-def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[str, Any]:
+def build_production_contract(
+    dataset: dict[str, Any],
+    scene_id: str,
+    *,
+    material_style_conflicts: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     projection = project_scene_context(dataset, scene_id)
     scene = projection["generator_visible"]["target_scene"]
     prose = projection["generator_visible"]["prose_guidance"]
@@ -583,12 +620,27 @@ def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[st
     protected = copy.deepcopy(
         projection["reviewer_only"].get("protected_material", [])
     )
+    local_style_guidance = copy.deepcopy(
+        [s for a in prose["modes"] for s in a.get("style", [])]
+    )
+    style_projection = STYLE.resolve_style_projection(
+        dataset,
+        scene_id=scene_id,
+        local_style_guidance=local_style_guidance,
+        material_conflicts=material_style_conflicts,
+    )
+    if style_projection.get("status") != "ready":
+        raise SceneNotReadyError(
+            f"{scene_id}: unresolved material style conflicts: "
+            f"{style_projection.get('material_conflicts', [])}"
+        )
 
     contract_seed = {
         "target_scope": scene_id,
         "scene_revision": projection["scene_revision"],
         "stop_boundary": scene["exit"],
         "projection": projection,
+        "style_projection": style_projection,
     }
     return {
         "id": _stable_id("contract", contract_seed),
@@ -617,9 +669,8 @@ def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[st
         },
         "entry_exit_conditions": {"entry": scene["entry"], "exit": scene["exit"]},
         "prose_guidance": copy.deepcopy(prose),
-        "style_voice": copy.deepcopy(
-            [s for a in prose["modes"] for s in a.get("style", [])]
-        ),
+        "style_voice": local_style_guidance,
+        "style_projection": copy.deepcopy(style_projection),
         "protected_material": protected,
         "creative_allowance": [
             "local sensory detail",
@@ -652,6 +703,12 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
             projection["current_target_manuscript_revisions"]
         ),
     }
+    author_profile = contract.get("style_projection", {}).get("author_profile")
+    selected_revisions["style_profile"] = (
+        {author_profile["id"]: author_profile["revision"]}
+        if isinstance(author_profile, dict)
+        else {}
+    )
     seed = {
         "contract_id": contract["id"],
         "target_scope": contract["target_scope"],
@@ -666,6 +723,7 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
         "target_scope": contract["target_scope"],
         "stop_boundary": contract["stop_boundary"],
         "selected_revisions": selected_revisions,
+        "style_projection": copy.deepcopy(contract["style_projection"]),
         "creative_allowance": copy.deepcopy(contract["creative_allowance"]),
         "prohibited_invention": copy.deepcopy(
             contract["prohibited_consequential_invention"]
