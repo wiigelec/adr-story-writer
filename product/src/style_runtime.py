@@ -64,17 +64,9 @@ def generation_quality_guidance() -> dict[str, Any]:
     return copy.deepcopy(value)
 
 
-def propose_style_profile(
-    dataset: dict[str, Any],
-    *,
-    profile_id: str,
-    guidance: dict[str, Any],
+def _normalize_source_samples(
     source_samples: list[dict[str, Any]],
-) -> dict[str, Any]:
-    if not isinstance(profile_id, str) or not profile_id:
-        raise StyleRuntimeError("style profile requires a non-empty id")
-    if not isinstance(guidance, dict) or not guidance:
-        raise StyleRuntimeError("style profile requires normalized guidance")
+) -> list[dict[str, Any]]:
     if not isinstance(source_samples, list) or not source_samples:
         raise StyleRuntimeError("style profile requires at least one source sample reference")
     allowed_source_fields = {"kind", "reference", "label", "revision", "digest"}
@@ -91,6 +83,21 @@ def propose_style_profile(
                 if key in source
             }
         )
+    return normalized_sources
+
+
+def propose_style_profile(
+    dataset: dict[str, Any],
+    *,
+    profile_id: str,
+    guidance: dict[str, Any],
+    source_samples: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not isinstance(profile_id, str) or not profile_id:
+        raise StyleRuntimeError("style profile requires a non-empty id")
+    if not isinstance(guidance, dict) or not guidance:
+        raise StyleRuntimeError("style profile requires normalized guidance")
+    normalized_sources = _normalize_source_samples(source_samples)
 
     prose = _prose_state(dataset, initialize=True)
     profiles = prose["style_profiles"]
@@ -111,6 +118,43 @@ def propose_style_profile(
         "source_samples": normalized_sources,
     }
     profiles[profile_id] = profile
+    return copy.deepcopy(profile)
+
+
+def revise_style_profile(
+    dataset: dict[str, Any],
+    *,
+    profile_id: str,
+    guidance: dict[str, Any],
+    source_samples: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not isinstance(guidance, dict) or not guidance:
+        raise StyleRuntimeError("style profile requires normalized guidance")
+    normalized_sources = _normalize_source_samples(source_samples)
+    prose = _prose_state(dataset, initialize=True)
+    profile = prose["style_profiles"].get(profile_id)
+    if not isinstance(profile, dict):
+        raise StyleRuntimeError(f"unknown style profile: {profile_id}")
+    if profile.get("authority_class") != "production_approved":
+        raise StyleRuntimeError("only a production_approved style profile may be revised")
+    prior_revision = profile.get("revision")
+    if not isinstance(prior_revision, str) or not prior_revision:
+        raise StyleRuntimeError("approved style profile lacks durable revision")
+
+    normalized_guidance = copy.deepcopy(guidance)
+    new_revision = _profile_revision(
+        profile_id,
+        normalized_guidance,
+        normalized_sources,
+    )
+    if new_revision == prior_revision:
+        raise StyleRuntimeError("style profile revision must change governed content")
+
+    profile["authority_class"] = "production_candidate"
+    profile["revision"] = new_revision
+    profile["guidance"] = normalized_guidance
+    profile["source_samples"] = normalized_sources
+    profile["supersedes_revision"] = prior_revision
     return copy.deepcopy(profile)
 
 
@@ -148,6 +192,7 @@ def resolve_style_projection(
     *,
     scene_id: str,
     local_style_guidance: list[Any] | None = None,
+    material_conflicts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     prose = _prose_state(dataset, initialize=False)
     profiles = prose.get("style_profiles", {})
@@ -183,7 +228,21 @@ def resolve_style_projection(
     if not isinstance(local, list):
         raise StyleRuntimeError("local style guidance must be an array")
 
+    conflicts = [] if material_conflicts is None else copy.deepcopy(material_conflicts)
+    if not isinstance(conflicts, list):
+        raise StyleRuntimeError("material style conflicts must be an array")
+    for conflict in conflicts:
+        if not isinstance(conflict, dict):
+            raise StyleRuntimeError("material style conflict must be an object")
+        description = conflict.get("description")
+        if not isinstance(description, str) or not description.strip():
+            raise StyleRuntimeError(
+                "material style conflict requires a non-empty description"
+            )
+
     return {
+        "status": "unresolved" if conflicts else "ready",
+        "material_conflicts": conflicts,
         "target_scope": scene_id,
         "generation_quality_guidance": generation_quality_guidance(),
         "author_profile": author_profile,

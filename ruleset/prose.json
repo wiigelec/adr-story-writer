@@ -12,7 +12,7 @@
       }
     },
     "pseudo_prose": "Near-prose realization establishing order, paragraph-scale flow, emphasis, transitions, viewpoint handling, and rough wording without requiring final literary polish.",
-    "style_profiles": "Persistent author-reviewed Prose realization guidance derived from representative author samples or supplied directly by the author. Style profiles are production control, not Canon or Plot truth."
+    "style_profiles": "Persistent author-reviewed Prose realization guidance derived from representative author samples or supplied directly by the author. Style profiles are production control, not Canon or Plot truth. Revised approved guidance returns to candidate state under the same stable profile identity until explicitly re-approved."
   },
   "generation_quality_guidance": {
     "semantic_restraint": [
@@ -56,7 +56,9 @@
       "local_style_guidance"
     ],
     "material_conflict_rule": "A material semantic conflict requires review; greater locality does not by itself authorize contradiction of accepted broader guidance.",
-    "raw_author_samples_are_not_routine_generation_context": true
+    "raw_author_samples_are_not_routine_generation_context": true,
+    "declared_material_conflicts_block_generation": true,
+    "conflict_handoff": "Semantic author-workshop review identifies material conflicts; the deterministic runtime preserves declared conflicts as unresolved control state and refuses a generation-ready production contract until they are resolved."
   },
   "refinement": [
     "beats",

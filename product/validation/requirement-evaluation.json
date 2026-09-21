@@ -872,7 +872,8 @@
     {
       "requirement": "FS-007-NR-005",
       "tasks": [
-        "fs007-style-state"
+        "fs007-style-state",
+        "fs007-style-revision"
       ]
     },
     {
@@ -903,7 +904,8 @@
     {
       "requirement": "FS-007-NR-010",
       "tasks": [
-        "fs007-generation-package"
+        "fs007-generation-package",
+        "fs007-style-conflicts"
       ]
     },
     {
@@ -952,6 +954,18 @@
       "requirement": "FS-007-NR-021",
       "tasks": [
         "fs007-dataset-boundary"
+      ]
+    },
+    {
+      "requirement": "FS-007-NR-018",
+      "tasks": [
+        "fs007-style-conflicts"
+      ]
+    },
+    {
+      "requirement": "FS-007-NR-022",
+      "tasks": [
+        "fs007-style-revision"
       ]
     }
   ]

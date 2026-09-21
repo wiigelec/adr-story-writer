@@ -587,7 +587,12 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         ),
     }
 
-def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[str, Any]:
+def build_production_contract(
+    dataset: dict[str, Any],
+    scene_id: str,
+    *,
+    material_style_conflicts: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     projection = project_scene_context(dataset, scene_id)
     scene = projection["generator_visible"]["target_scene"]
     prose = projection["generator_visible"]["prose_guidance"]
@@ -622,7 +627,13 @@ def build_production_contract(dataset: dict[str, Any], scene_id: str) -> dict[st
         dataset,
         scene_id=scene_id,
         local_style_guidance=local_style_guidance,
+        material_conflicts=material_style_conflicts,
     )
+    if style_projection.get("status") != "ready":
+        raise SceneNotReadyError(
+            f"{scene_id}: unresolved material style conflicts: "
+            f"{style_projection.get('material_conflicts', [])}"
+        )
 
     contract_seed = {
         "target_scope": scene_id,

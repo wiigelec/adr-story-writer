@@ -39,8 +39,9 @@ appear in a sample.
 
 ### FS-007-NR-005 — Explicit Profile Approval
 **Classification: B**
-A newly derived author-style profile shall remain a production candidate until
-an explicit approval operation makes it production-approved guidance.
+A newly derived or revised author-style profile shall remain a production
+candidate until an explicit approval operation makes that revision
+production-approved guidance.
 
 ### FS-007-NR-006 — General Generation-quality Guidance
 **Classification: B**
@@ -63,17 +64,17 @@ scene/mode guidance shall remain distinguishable in resolved generation control.
 ### FS-007-NR-009 — Resolved Style Projection
 **Classification: B**
 A scene generation operation shall resolve the applicable guidance layers into a
-bounded structured style projection.
+bounded structured style projection with explicit readiness state.
 
 ### FS-007-NR-010 — Production Contract Integration
 **Classification: B**
-The scene production contract shall include the resolved style projection, and
-its identity shall materially reflect that projection.
+The scene production contract shall include a ready resolved style projection,
+and its identity shall materially reflect that projection.
 
 ### FS-007-NR-011 — Generation Package Integration
 **Classification: B**
-The generation package shall freeze the resolved style projection and identify
-the selected author-style profile revision when one applies.
+The generation package shall freeze the ready resolved style projection and
+identify the selected author-style profile revision when one applies.
 
 ### FS-007-NR-012 — No Routine Raw-sample Injection
 **Classification: B**
@@ -95,8 +96,8 @@ migration solely to represent optional style-profile state.
 ### FS-007-NR-015 — Ruleset Rebinding
 **Classification: B**
 A compatible schema-v1 Dataset bound to Ruleset `0.3.0` shall have an explicit
-meaning-preserving rebinding path to the FS-007 Ruleset rather than being
-classified migration-required.
+meaning-preserving rebinding path to Ruleset `0.4.0` rather than being classified
+migration-required.
 
 ### FS-007-NR-016 — Authority Boundary
 **Classification: S**
@@ -111,17 +112,20 @@ generation shall reconstruct in a fresh compatible session without reliance on
 prior conversation or private model memory.
 
 ### FS-007-NR-018 — Material Conflict Safety
-**Classification: S**
-When applicable guidance contains a material semantic conflict that cannot be
-resolved mechanically without choosing author intent, the Product shall surface
-the conflict rather than silently invent precedence.
+**Classification: B**
+When the author or Semantic Review identifies a material semantic conflict among
+applicable guidance, the Product shall preserve that conflict as explicit
+unresolved control state and shall refuse generation-ready production-contract
+construction until it is resolved. Determining whether arbitrary guidance is
+materially conflicting remains a semantic evaluation.
 
 ### FS-007-NR-019 — End-to-end Style Demonstration
 **Classification: S**
 Semantic Review shall demonstrate author-sample analysis, candidate profile
-review, explicit approval, baseline quality guidance, local guidance layering,
-generation-package projection, and prose generation that uses the guidance
-without treating the source samples as story authority.
+review, explicit approval and revision, baseline quality guidance, local
+guidance layering, conflict identification/refusal, generation-package
+projection, and prose generation that uses the guidance without treating source
+samples as story authority.
 
 ### FS-007-NR-020 — Requirement Evaluation Bindings
 **Classification: M**
@@ -133,3 +137,11 @@ semantic-only requirements shall not be mechanically claimed.
 **Classification: B**
 Story-instance Dataset state and author sample fixtures shall remain outside this
 Ruleset repository.
+
+### FS-007-NR-022 — Stable Profile Revision
+**Classification: B**
+An approved author-style profile shall be revisable under the same stable profile
+identity into a distinct production-candidate content revision that records the
+immediately superseded revision and requires explicit production approval before
+governing new generation. Previously frozen generation packages shall remain
+unchanged.

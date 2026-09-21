@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REQS = ROOT / "product" / "specs" / "FS-007-requirements.md"
 MANIFEST = ROOT / "product" / "validation" / "requirement-evaluation.json"
-DESIGN_REVISION = "33fa138f69b85a15877610760006d7a98e6e376b"
+DESIGN_REVISION = "08c6670ede17618f8b99c77e648168caeff1351f"
 
 
 def check(condition: bool, message: str) -> bool:
@@ -214,7 +214,9 @@ def task_style_projection():
         local_style_guidance=["Use the scene's established practical tone."],
     )
     if not check(
-        baseline["author_profile"] is None
+        baseline["status"] == "ready"
+        and baseline["material_conflicts"] == []
+        and baseline["author_profile"] is None
         and baseline["author_style_guidance"] == {}
         and baseline["generation_quality_guidance"],
         "Dataset without author profile did not resolve baseline guidance",
@@ -253,6 +255,101 @@ def task_style_projection():
             == ["Keep the repair action concrete."],
             "resolved style projection omitted local guidance",
         )
+    )
+
+
+
+def task_style_revision():
+    dataset = _dataset()
+    STYLE.propose_style_profile(
+        dataset,
+        profile_id="author-default",
+        guidance={"voice": ["direct"]},
+        source_samples=[{"kind": "author_sample", "reference": "drive:sample-v1"}],
+    )
+    approved = STYLE.approve_style_profile(dataset, "author-default")
+    STYLE.select_default_style_profile(dataset, "author-default")
+    original_revision = approved["revision"]
+    original_package = SCENE.build_generation_package(
+        SCENE.build_production_contract(dataset, "scene-1")
+    )
+
+    revised = STYLE.revise_style_profile(
+        dataset,
+        profile_id="author-default",
+        guidance={"voice": ["direct", "less ornamental"]},
+        source_samples=[{"kind": "author_sample", "reference": "drive:sample-v2"}],
+    )
+    if not check(
+        revised["id"] == "author-default"
+        and revised["authority_class"] == "production_candidate"
+        and revised["revision"] != original_revision
+        and revised["supersedes_revision"] == original_revision,
+        "style profile revision did not preserve identity and candidate supersession",
+    ):
+        return False
+    if not check(
+        dataset["prose"]["style_selection"]["default_profile"] == "author-default",
+        "style profile revision unexpectedly changed default selection",
+    ):
+        return False
+    try:
+        STYLE.resolve_style_projection(dataset, scene_id="scene-1")
+    except STYLE.StyleRuntimeError:
+        pass
+    else:
+        return check(False, "selected candidate profile governed new generation")
+
+    if not check(
+        original_package["selected_revisions"]["style_profile"]
+        == {"author-default": original_revision},
+        "previously frozen generation package revision changed after style revision",
+    ):
+        return False
+
+    reapproved = STYLE.approve_style_profile(dataset, "author-default")
+    projection = STYLE.resolve_style_projection(dataset, scene_id="scene-1")
+    return check(
+        projection["author_profile"]["revision"] == reapproved["revision"]
+        and reapproved["revision"] == revised["revision"],
+        "re-approved style revision did not govern later projection",
+    )
+
+
+def task_style_conflicts():
+    dataset = _dataset()
+    conflicts = [
+        {
+            "description": (
+                "accepted author guidance requires past tense while the local "
+                "scene instruction requests present tense"
+            ),
+            "layers": ["author_style_guidance", "local_style_guidance"],
+        }
+    ]
+    projection = STYLE.resolve_style_projection(
+        dataset,
+        scene_id="scene-1",
+        local_style_guidance=["Use present tense."],
+        material_conflicts=conflicts,
+    )
+    if not check(
+        projection["status"] == "unresolved"
+        and projection["material_conflicts"] == conflicts,
+        "declared material style conflict was not preserved as unresolved state",
+    ):
+        return False
+    try:
+        SCENE.build_production_contract(
+            dataset,
+            "scene-1",
+            material_style_conflicts=conflicts,
+        )
+    except SCENE.SceneNotReadyError:
+        return True
+    return check(
+        False,
+        "production contract was built despite unresolved material style conflict",
     )
 
 
@@ -427,6 +524,8 @@ TASKS = {
     "fs007-style-state": task_style_state,
     "fs007-generation-quality": task_generation_quality,
     "fs007-style-projection": task_style_projection,
+    "fs007-style-revision": task_style_revision,
+    "fs007-style-conflicts": task_style_conflicts,
     "fs007-generation-package": task_generation_package,
     "fs007-reconstruction": task_reconstruction,
     "fs007-rebinding": task_rebinding,
