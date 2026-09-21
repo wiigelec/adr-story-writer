@@ -77,11 +77,20 @@ def propose_style_profile(
         raise StyleRuntimeError("style profile requires normalized guidance")
     if not isinstance(source_samples, list) or not source_samples:
         raise StyleRuntimeError("style profile requires at least one source sample reference")
+    allowed_source_fields = {"kind", "reference", "label", "revision", "digest"}
+    normalized_sources = []
     for source in source_samples:
         if not isinstance(source, dict):
             raise StyleRuntimeError("style source reference must be an object")
         if not isinstance(source.get("reference"), str) or not source["reference"]:
             raise StyleRuntimeError("style source reference requires reference")
+        normalized_sources.append(
+            {
+                key: copy.deepcopy(source[key])
+                for key in allowed_source_fields
+                if key in source
+            }
+        )
 
     prose = _prose_state(dataset, initialize=True)
     profiles = prose["style_profiles"]
@@ -89,7 +98,6 @@ def propose_style_profile(
         raise StyleRuntimeError(f"style profile already exists: {profile_id}")
 
     normalized_guidance = copy.deepcopy(guidance)
-    normalized_sources = copy.deepcopy(source_samples)
     profile = {
         "id": profile_id,
         "surface": "prose.style_profile",

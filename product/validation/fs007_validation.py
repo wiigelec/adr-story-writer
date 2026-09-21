@@ -176,6 +176,10 @@ def task_style_state():
             approved["source_samples"][0]["reference"] == "drive:author-sample/ch01",
             "style source provenance was not preserved",
         )
+        and check(
+            "sample_text_forbidden" not in approved["source_samples"][0],
+            "style profile persisted unbounded author-sample content",
+        )
     )
 
 
@@ -394,7 +398,7 @@ def task_dataset_boundary():
 def task_manifest_bindings():
     text = REQS.read_text(encoding="utf-8")
     parsed = re.findall(
-        r"^### (FS-007-NR-\\d{3}).*?\\n\\*\\*Classification: ([MSB])\\*\\*",
+        r"^### (FS-007-NR-\d{3}).*?\n\*\*Classification: ([MSB])\*\*",
         text,
         re.M | re.S,
     )
