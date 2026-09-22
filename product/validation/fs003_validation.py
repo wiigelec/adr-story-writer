@@ -608,6 +608,38 @@ def task_scene_runtime() -> bool:
             "scene-002-signal-shed",
         )
         candidate_package = rt.build_generation_package(candidate_contract)
+        candidate_scene_contract = candidate_package["generator_payload"][
+            "scene_contract"
+        ]
+        candidate_scene_payload = json.dumps(
+            candidate_scene_contract,
+            ensure_ascii=False,
+        ).lower()
+        candidate_dependency_record = next(
+            (
+                dep
+                for dep in candidate_package["candidate_dependencies"]
+                if dep.get("target_id") == "event-storm"
+            ),
+            None,
+        )
+        if not check(
+            isinstance(candidate_dependency_record, dict)
+            and candidate_dependency_record["authority_basis"] == "candidate"
+            and candidate_package["selected_revisions"]["dependencies"].get(
+                "event-storm"
+            )
+            == "canon-event-storm-r1",
+            "FS-003: candidate dependency lost frozen provenance",
+        ):
+            return False
+        if not check(
+            "event-storm" not in candidate_scene_payload
+            and "a lightning storm damages the west telegraph span."
+            not in candidate_scene_payload,
+            "FS-003: candidate dependency semantic state entered compiled scene contract",
+        ):
+            return False
         candidate_text = rt.create_candidate(
             candidate_package,
             "Mara tests the relay and follows the evidence west.",

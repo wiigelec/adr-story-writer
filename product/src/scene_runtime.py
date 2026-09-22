@@ -493,8 +493,12 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     if missing:
         raise SceneNotReadyError(f"{scene_id}: unresolved dependencies: {missing}")
 
+    dependency_authority: dict[str, str] = {}
     for dep_id in dependencies:
-        _authority_basis(index[dep_id], context=f"{scene_id}: dependency {dep_id}")
+        dependency_authority[dep_id] = _authority_basis(
+            index[dep_id],
+            context=f"{scene_id}: dependency {dep_id}",
+        )
 
     viewpoint_id = scene["viewpoint"]
     viewpoint = index.get(viewpoint_id)
@@ -511,7 +515,9 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     hidden_ids = _hidden_dependency_ids(scene, index)
     visible_dependency_ids = [dep for dep in dependencies if dep not in hidden_ids]
     visible_dependencies = [
-        _generator_artifact(index[dep], viewpoint_id) for dep in visible_dependency_ids
+        _generator_artifact(index[dep], viewpoint_id)
+        for dep in visible_dependency_ids
+        if dependency_authority[dep] == "accepted"
     ]
     hidden_dependencies = [
         copy.deepcopy(index[dep]) for dep in dependencies if dep in hidden_ids
