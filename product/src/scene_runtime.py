@@ -587,6 +587,92 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         ),
     }
 
+def _append_unique_text(target: list[str], value: Any) -> None:
+    if isinstance(value, str) and value and value not in target:
+        target.append(value)
+
+
+def _compile_scene_contract(
+    projection: dict[str, Any],
+    prose: dict[str, list[dict[str, Any]]],
+    *,
+    creative_allowance: list[str],
+    prohibited_invention: list[str],
+) -> dict[str, Any]:
+    """Compile generator-ready scene state without creating new story meaning."""
+    generator = projection["generator_visible"]
+    scene = generator["target_scene"]
+    viewpoint = generator["viewpoint"]
+
+    continuity_facts: list[str] = []
+    knowledge = viewpoint.get("knowledge", [])
+    if isinstance(knowledge, list):
+        for item in knowledge:
+            _append_unique_text(continuity_facts, item)
+
+    entities: list[dict[str, Any]] = []
+    prior_scene_states: list[dict[str, Any]] = []
+    for artifact in generator.get("accepted_dependencies", []):
+        if not isinstance(artifact, dict):
+            continue
+        entity = {
+            key: copy.deepcopy(artifact[key])
+            for key in ("id", "surface", "name")
+            if key in artifact
+        }
+        if entity.get("name"):
+            entities.append(entity)
+        _append_unique_text(continuity_facts, artifact.get("summary"))
+        if artifact.get("surface") == "plot.sequence":
+            prior_scene_states.append({
+                key: copy.deepcopy(artifact[key])
+                for key in ("id", "entry", "exit", "required_movements")
+                if key in artifact
+            })
+
+    viewpoint_realization = [
+        artifact["viewpoint"]
+        for artifact in prose.get("modes", [])
+        if isinstance(artifact.get("viewpoint"), str)
+        and artifact["viewpoint"]
+    ]
+    reader = scene.get("reader_information", {})
+    may_reveal = (
+        copy.deepcopy(reader.get("may_reveal", []))
+        if isinstance(reader, dict)
+        else []
+    )
+
+    return {
+        "identity": {
+            key: copy.deepcopy(scene[key])
+            for key in ("id", "ordinal", "revision")
+            if key in scene
+        },
+        "viewpoint": {
+            "id": scene["viewpoint"],
+            "name": copy.deepcopy(viewpoint.get("name")),
+            "knowledge": copy.deepcopy(
+                knowledge if isinstance(knowledge, list) else []
+            ),
+            "realization": copy.deepcopy(viewpoint_realization),
+        },
+        "opening_state": copy.deepcopy(scene["entry"]),
+        "narrative_movement": copy.deepcopy(scene.get("required_movements", [])),
+        "information_access": {"may_reveal": may_reveal},
+        "continuity": {
+            "entities": entities,
+            "facts": continuity_facts,
+            "prior_scene_states": prior_scene_states,
+        },
+        "invention_policy": {
+            "creative_allowance": copy.deepcopy(creative_allowance),
+            "prohibited": copy.deepcopy(prohibited_invention),
+        },
+        "stop_condition": copy.deepcopy(scene["exit"]),
+    }
+
+
 def build_production_contract(
     dataset: dict[str, Any],
     scene_id: str,
@@ -635,12 +721,33 @@ def build_production_contract(
             f"{style_projection.get('material_conflicts', [])}"
         )
 
+    creative_allowance = [
+        "local sensory detail",
+        "non-consequential connective action",
+        "wording and sentence-level realization",
+    ]
+    prohibited_invention = [
+        "new Canon truth",
+        "new Plot outcome beyond the stop boundary",
+        "disclosure of reviewer-only information",
+    ]
+    scene_contract = _compile_scene_contract(
+        projection,
+        prose,
+        creative_allowance=creative_allowance,
+        prohibited_invention=prohibited_invention,
+    )
+    pseudo_prose = copy.deepcopy(
+        [u for a in prose["pseudo_prose"] for u in a.get("units", [])]
+    )
     contract_seed = {
         "target_scope": scene_id,
         "scene_revision": projection["scene_revision"],
         "stop_boundary": scene["exit"],
-        "projection": projection,
+        "scene_contract": scene_contract,
+        "pseudo_prose": pseudo_prose,
         "style_projection": style_projection,
+        "reviewer_only": projection["reviewer_only"],
     }
     return {
         "id": _stable_id("contract", contract_seed),
@@ -649,9 +756,11 @@ def build_production_contract(
         "narrative_movement": copy.deepcopy(
             scene.get("required_movements", scene.get("purpose"))
         ),
+        "scene_contract": scene_contract,
+        "pseudo_prose": pseudo_prose,
         "local_realization_units": copy.deepcopy(
             [u for a in prose["beats"] for u in a.get("beats", [])]
-            + [u for a in prose["pseudo_prose"] for u in a.get("units", [])]
+            + pseudo_prose
         ),
         "viewpoint_access": {
             "viewpoint": scene["viewpoint"],
@@ -672,16 +781,8 @@ def build_production_contract(
         "style_voice": local_style_guidance,
         "style_projection": copy.deepcopy(style_projection),
         "protected_material": protected,
-        "creative_allowance": [
-            "local sensory detail",
-            "non-consequential connective action",
-            "wording and sentence-level realization",
-        ],
-        "prohibited_consequential_invention": [
-            "new Canon truth",
-            "new Plot outcome beyond the stop boundary",
-            "disclosure of reviewer-only information",
-        ],
+        "creative_allowance": creative_allowance,
+        "prohibited_consequential_invention": prohibited_invention,
         "accepted_dependencies": accepted_dependencies,
         "candidate_dependencies": candidate_dependencies,
         "target_authority_basis": projection["scene_authority_basis"],
@@ -713,7 +814,11 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
         "contract_id": contract["id"],
         "target_scope": contract["target_scope"],
         "selected_revisions": selected_revisions,
-        "generator_visible_context": projection["generator_visible"],
+        "generator_payload": {
+            "scene_contract": contract["scene_contract"],
+            "style_projection": contract["style_projection"],
+            "pseudo_prose": contract["pseudo_prose"],
+        },
         "reviewer_only_constraints": projection["reviewer_only"],
         "stop_boundary": contract["stop_boundary"],
     }
@@ -728,9 +833,11 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
         "prohibited_invention": copy.deepcopy(
             contract["prohibited_consequential_invention"]
         ),
-        "generator_visible_context": copy.deepcopy(
-            projection["generator_visible"]
-        ),
+        "generator_payload": {
+            "scene_contract": copy.deepcopy(contract["scene_contract"]),
+            "style_projection": copy.deepcopy(contract["style_projection"]),
+            "pseudo_prose": copy.deepcopy(contract["pseudo_prose"]),
+        },
         "reviewer_only_constraints": copy.deepcopy(
             projection["reviewer_only"]
         ),
