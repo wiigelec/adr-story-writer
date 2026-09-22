@@ -57,9 +57,10 @@ def _fixture(root: Path) -> None:
             "knowledge": [
                 "A lightning storm damaged the west telegraph span before her arrival.",
                 "Eli Rusk is the caretaker at Red Hollow.",
+                "A sealed railway dispatch satchel is hidden beneath the signal-shed floor.",
             ],
             "does_not_know": [
-                "Eli concealed a sealed railway dispatch satchel beneath the signal-shed floor."
+                "Why Eli concealed the dispatch satchel."
             ],
         },
         "eli-rusk": {
@@ -145,8 +146,10 @@ def _fixture(root: Path) -> None:
             "surface": "plot.sequence",
             "authority_class": "accepted_semantic",
             "revision": "plot-scene-002-r1",
+            "title": "The Signal Shed",
             "ordinal": 2,
             "viewpoint": "character-mara-venn",
+            "setting": "the signal shed at Red Hollow Relay Station",
             "purpose": "Diagnose the relay without revealing Eli's hidden satchel.",
             "entry": "Mara and Eli enter the signal shed.",
             "required_movements": [
@@ -237,10 +240,24 @@ def _fixture(root: Path) -> None:
             "authority_class": "production_approved",
             "revision": "prose-pseudo-002-r1",
             "target_scope": "scene-002-signal-shed",
+            "opening_shape": "enter through practical diagnosis rather than exposition",
+            "closing_shape": "leave on the stronger west-span lead",
             "units": [
-                "The relay test succeeds.",
-                "Mara notices the floorboard.",
-                "They leave for the west span.",
+                {
+                    "unit_id": "unit-relay",
+                    "primary_mode": "action",
+                    "content_movement": "The relay test succeeds.",
+                },
+                {
+                    "unit_id": "unit-floorboard",
+                    "primary_mode": "internal",
+                    "content_movement": "Mara notices the floorboard.",
+                },
+                {
+                    "unit_id": "unit-exit",
+                    "primary_mode": "action",
+                    "content_movement": "They leave for the west span.",
+                },
             ],
         },
         "scene-003-first-message": {
@@ -322,8 +339,26 @@ def task_scene_runtime() -> bool:
         contract = env["contract"]
         package = env["package"]
 
-        generator_payload = json.dumps(
-            context["generator_visible"],
+        production_rules = json.loads(
+            (ROOT / "ruleset/production.json").read_text(encoding="utf-8")
+        )
+        if not check(
+            "generator_payload"
+            in production_rules["generation_package"]["required_fields"]
+            and production_rules["information_access"][
+                "supports_generator_visible_context"
+            ]
+            is False
+            and production_rules["information_access"][
+                "supports_compiled_generator_payload"
+            ]
+            is True,
+            "FS-003: production Ruleset still advertises the retired broad generator context",
+        ):
+            return False
+
+        compiler_payload = json.dumps(
+            context["compiler_context"],
             ensure_ascii=False,
         ).lower()
         reviewer_payload = json.dumps(
@@ -331,13 +366,8 @@ def task_scene_runtime() -> bool:
             ensure_ascii=False,
         ).lower()
         if not check(
-            "dispatch satchel" not in generator_payload,
-            "FS-003: concealed fact leaked into generator context",
-        ):
-            return False
-        if not check(
-            "does_not_know" not in generator_payload,
-            "FS-003: negative viewpoint knowledge leaked into generator context",
+            "does_not_know" not in compiler_payload,
+            "FS-003: negative viewpoint knowledge leaked into compiler projection",
         ):
             return False
         if not check(
@@ -361,6 +391,92 @@ def task_scene_runtime() -> bool:
         ):
             return False
         if not check(
+            "generator_visible_context" not in package,
+            "FS-003: package still exposes broad upstream generator context",
+        ):
+            return False
+        generation = package.get("generator_payload")
+        if not check(
+            isinstance(generation, dict)
+            and set(generation)
+            == {"scene_contract", "style_projection", "pseudo_prose"},
+            "FS-003: package generator payload is not the compiled scene/style/pseudo-prose interface",
+        ):
+            return False
+        scene_contract = generation["scene_contract"]
+        if not check(
+            scene_contract["identity"]["title"] == "The Signal Shed"
+            and scene_contract["setting"]
+            == "the signal shed at Red Hollow Relay Station"
+            and scene_contract["opening_state"]
+            == "Mara and Eli enter the signal shed."
+            and scene_contract["stop_condition"]
+            == "Mara decides to inspect the west span."
+            and scene_contract["narrative_movement"]
+            == [
+                "Mara verifies that the relay is intact.",
+                "Mara notices a recently disturbed floorboard.",
+                "Eli redirects attention toward the west span.",
+            ]
+            and scene_contract["realization_shape"]
+            == {
+                "opening": [
+                    "enter through practical diagnosis rather than exposition"
+                ],
+                "closing": ["leave on the stronger west-span lead"],
+            },
+            "FS-003: compiled scene contract lost governed scene movement or shape",
+        ):
+            return False
+        prior = scene_contract["continuity"]["immediate_prior_scene"]
+        if not check(
+            isinstance(prior, dict)
+            and prior["id"] == "scene-001-arrival"
+            and prior["exit"] == "Eli says the relay is dead."
+            and "content" not in prior,
+            "FS-003: immediate same-viewpoint Plot state was not compiled safely",
+        ):
+            return False
+        if not check(
+            generation["pseudo_prose"]
+            == [
+                {
+                    "unit_id": "unit-relay",
+                    "primary_mode": "action",
+                    "content_movement": "The relay test succeeds.",
+                },
+                {
+                    "unit_id": "unit-floorboard",
+                    "primary_mode": "internal",
+                    "content_movement": "Mara notices the floorboard.",
+                },
+                {
+                    "unit_id": "unit-exit",
+                    "primary_mode": "action",
+                    "content_movement": "They leave for the west span.",
+                },
+            ],
+            "FS-003: structured production-approved pseudo-prose was not preserved in order",
+        ):
+            return False
+        compiled_payload = json.dumps(generation, ensure_ascii=False).lower()
+        if not check(
+            "dispatch satchel" not in compiled_payload,
+            "FS-003: viewpoint knowledge or concealed Plot material leaked into compiled generator payload",
+        ):
+            return False
+        if not check(
+            "knowledge" not in generation["scene_contract"]["viewpoint"],
+            "FS-003: raw viewpoint knowledge remained generator-visible without Plot reveal authorization",
+        ):
+            return False
+        if not check(
+            "accepted_dependencies" not in generation
+            and "accepted_prior_manuscript" not in generation,
+            "FS-003: raw upstream artifacts remain routine generator inputs",
+        ):
+            return False
+        if not check(
             package == rt.build_generation_package(copy.deepcopy(contract)),
             "FS-003: generation package is not stable for identical governing state",
         ):
@@ -380,9 +496,57 @@ def task_scene_runtime() -> bool:
         ):
             return False
         if not check(
+            selected["prior_scene"].get("scene-001-arrival")
+            == "plot-scene-001-r1",
+            "FS-003: compiled prior Plot revision missing from package provenance",
+        ):
+            return False
+        if not check(
             selected["prior_manuscript"].get("manuscript-scene-001")
             == "manuscript-scene-001-r1",
             "FS-003: prior Manuscript revision missing from package provenance",
+        ):
+            return False
+
+        candidate_prior = copy.deepcopy(env["session"].dataset)
+        for prior_scene in candidate_prior["plot"]["sequence"]:
+            if prior_scene.get("id") == "scene-001-arrival":
+                prior_scene["authority_class"] = "candidate_semantic"
+        candidate_prior_package = rt.build_generation_package(
+            rt.build_production_contract(
+                candidate_prior,
+                "scene-002-signal-shed",
+            )
+        )
+        if not check(
+            candidate_prior_package["generator_payload"]["scene_contract"][
+                "continuity"
+            ]["immediate_prior_scene"]
+            is None
+            and candidate_prior_package["selected_revisions"]["prior_scene"]
+            == {},
+            "FS-003: candidate prior Plot state silently governed continuity",
+        ):
+            return False
+
+        no_movement = copy.deepcopy(env["session"].dataset)
+        for target_scene in no_movement["plot"]["sequence"]:
+            if target_scene.get("id") == "scene-002-signal-shed":
+                target_scene.pop("required_movements", None)
+        no_movement_contract = rt.build_production_contract(
+            no_movement,
+            "scene-002-signal-shed",
+        )
+        no_movement_scene = no_movement_contract["scene_contract"]
+        if not check(
+            no_movement_scene["narrative_movement"] == []
+            and no_movement_contract["narrative_movement"] == []
+            and no_movement_scene["information_access"]["may_reveal"]
+            == [
+                "The relay is not the primary fault.",
+                "A floorboard appears disturbed.",
+            ],
+            "FS-003: reveal permission was promoted into narrative movement",
         ):
             return False
 
@@ -445,6 +609,38 @@ def task_scene_runtime() -> bool:
             "scene-002-signal-shed",
         )
         candidate_package = rt.build_generation_package(candidate_contract)
+        candidate_scene_contract = candidate_package["generator_payload"][
+            "scene_contract"
+        ]
+        candidate_scene_payload = json.dumps(
+            candidate_scene_contract,
+            ensure_ascii=False,
+        ).lower()
+        candidate_dependency_record = next(
+            (
+                dep
+                for dep in candidate_package["candidate_dependencies"]
+                if dep.get("target_id") == "event-storm"
+            ),
+            None,
+        )
+        if not check(
+            isinstance(candidate_dependency_record, dict)
+            and candidate_dependency_record["authority_basis"] == "candidate"
+            and candidate_package["selected_revisions"]["dependencies"].get(
+                "event-storm"
+            )
+            == "canon-event-storm-r1",
+            "FS-003: candidate dependency lost frozen provenance",
+        ):
+            return False
+        if not check(
+            "event-storm" not in candidate_scene_payload
+            and "a lightning storm damages the west telegraph span."
+            not in candidate_scene_payload,
+            "FS-003: candidate dependency semantic state entered compiled scene contract",
+        ):
+            return False
         candidate_text = rt.create_candidate(
             candidate_package,
             "Mara tests the relay and follows the evidence west.",
@@ -670,6 +866,7 @@ entries = [
 context = session.context("scene-002-signal-shed")
 next_scene = session.next_scene("scene-002-signal-shed")
 next_context = session.context("scene-003-first-message")
+next_package = session.package("scene-003-first-message")
 entry = entries[0] if len(entries) == 1 else {}
 print(json.dumps({
     "accepted_count": len(entries),
@@ -687,29 +884,29 @@ print(json.dumps({
         .get("target_scope")
     ),
     "current_target_count": len(
-        context["generator_visible"]["current_target_manuscript"]
+        context["compiler_context"]["current_target_manuscript"]
     ),
     "current_target_has_provenance": (
-        bool(context["generator_visible"]["current_target_manuscript"])
+        bool(context["compiler_context"]["current_target_manuscript"])
         and "generation_provenance"
-        in context["generator_visible"]["current_target_manuscript"][0]
+        in context["compiler_context"]["current_target_manuscript"][0]
     ),
     "next_scene": next_scene.get("id") if next_scene else None,
     "next_context": next_context.get("target_scope"),
     "next_generator_contains_satchel": (
         "dispatch satchel"
         in json.dumps(
-            next_context["generator_visible"],
+            next_package["generator_payload"],
             ensure_ascii=False,
         ).lower()
     ),
     "next_prior_manuscript_contains_provenance": any(
         "generation_provenance" in item or "review" in item
-        for item in next_context["generator_visible"]["accepted_prior_manuscript"]
+        for item in next_context["compiler_context"]["accepted_prior_manuscript"]
     ),
     "next_prior_plot_dependency_contains_purpose": any(
         item.get("surface") == "plot.sequence" and "purpose" in item
-        for item in next_context["generator_visible"]["accepted_dependencies"]
+        for item in next_context["compiler_context"]["accepted_dependencies"]
     ),
 }))
 """

@@ -27,6 +27,7 @@
       "target_scope",
       "stop_boundary",
       "selected_revisions",
+      "generator_payload",
       "style_projection",
       "creative_allowance",
       "prohibited_invention",
@@ -38,7 +39,8 @@
     "overflow_remains_candidate": true
   },
   "information_access": {
-    "supports_generator_visible_context": true,
+    "supports_generator_visible_context": false,
+    "supports_compiled_generator_payload": true,
     "supports_reviewer_only_constraints": true,
     "hidden_canon_does_not_authorize_disclosure": true
   },

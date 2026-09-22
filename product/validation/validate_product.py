@@ -95,7 +95,7 @@ def task_generation_package() -> bool:
     package = data.get("generation_package", {})
     required = {
         "id", "contract_id", "target_scope", "stop_boundary",
-        "selected_revisions", "creative_allowance",
+        "selected_revisions", "generator_payload", "creative_allowance",
         "prohibited_invention", "provenance",
     }
     access = data.get("information_access", {})
@@ -104,7 +104,12 @@ def task_generation_package() -> bool:
         check(required <= set(package.get("required_fields", [])), "production: generation package missing required fields")
         and check(package.get("stable_after_use") is True, "production: generation package must be stable after use")
         and check(package.get("overflow_remains_candidate") is True, "production: generation overflow must remain candidate")
-        and check(access.get("supports_generator_visible_context") is True and access.get("supports_reviewer_only_constraints") is True, "production: information-access separation missing")
+        and check(
+            access.get("supports_generator_visible_context") is False
+            and access.get("supports_compiled_generator_payload") is True
+            and access.get("supports_reviewer_only_constraints") is True,
+            "production: information-access separation missing",
+        )
         and check(generation.get("output_authority_class") == "candidate_manuscript", "production: generated prose must be candidate_manuscript")
     )
 
