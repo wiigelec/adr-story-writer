@@ -57,9 +57,10 @@ def _fixture(root: Path) -> None:
             "knowledge": [
                 "A lightning storm damaged the west telegraph span before her arrival.",
                 "Eli Rusk is the caretaker at Red Hollow.",
+                "A sealed railway dispatch satchel is hidden beneath the signal-shed floor.",
             ],
             "does_not_know": [
-                "Eli concealed a sealed railway dispatch satchel beneath the signal-shed floor."
+                "Why Eli concealed the dispatch satchel."
             ],
         },
         "eli-rusk": {
@@ -356,7 +357,7 @@ def task_scene_runtime() -> bool:
         ):
             return False
 
-        generator_payload = json.dumps(
+        compiler_payload = json.dumps(
             context["generator_visible"],
             ensure_ascii=False,
         ).lower()
@@ -365,13 +366,8 @@ def task_scene_runtime() -> bool:
             ensure_ascii=False,
         ).lower()
         if not check(
-            "dispatch satchel" not in generator_payload,
-            "FS-003: concealed fact leaked into generator context",
-        ):
-            return False
-        if not check(
-            "does_not_know" not in generator_payload,
-            "FS-003: negative viewpoint knowledge leaked into generator context",
+            "does_not_know" not in compiler_payload,
+            "FS-003: negative viewpoint knowledge leaked into compiler projection",
         ):
             return False
         if not check(
@@ -466,7 +462,12 @@ def task_scene_runtime() -> bool:
         compiled_payload = json.dumps(generation, ensure_ascii=False).lower()
         if not check(
             "dispatch satchel" not in compiled_payload,
-            "FS-003: concealed raw Plot purpose leaked into compiled generator payload",
+            "FS-003: viewpoint knowledge or concealed Plot material leaked into compiled generator payload",
+        ):
+            return False
+        if not check(
+            "knowledge" not in generation["scene_contract"]["viewpoint"],
+            "FS-003: raw viewpoint knowledge remained generator-visible without Plot reveal authorization",
         ):
             return False
         if not check(
@@ -832,6 +833,7 @@ entries = [
 context = session.context("scene-002-signal-shed")
 next_scene = session.next_scene("scene-002-signal-shed")
 next_context = session.context("scene-003-first-message")
+next_package = session.package("scene-003-first-message")
 entry = entries[0] if len(entries) == 1 else {}
 print(json.dumps({
     "accepted_count": len(entries),
@@ -861,7 +863,7 @@ print(json.dumps({
     "next_generator_contains_satchel": (
         "dispatch satchel"
         in json.dumps(
-            next_context["generator_visible"],
+            next_package["generator_payload"],
             ensure_ascii=False,
         ).lower()
     ),

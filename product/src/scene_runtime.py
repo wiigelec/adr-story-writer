@@ -635,10 +635,6 @@ def _compile_scene_contract(
     viewpoint = generator["viewpoint"]
 
     continuity_facts: list[str] = []
-    knowledge = viewpoint.get("knowledge", [])
-    if isinstance(knowledge, list):
-        for item in knowledge:
-            _append_unique_text(continuity_facts, item)
 
     entities: list[dict[str, Any]] = []
     prior_scene_states: list[dict[str, Any]] = []
@@ -722,9 +718,6 @@ def _compile_scene_contract(
         "viewpoint": {
             "id": scene["viewpoint"],
             "name": copy.deepcopy(viewpoint.get("name")),
-            "knowledge": copy.deepcopy(
-                knowledge if isinstance(knowledge, list) else []
-            ),
             "realization": copy.deepcopy(viewpoint_realization),
         },
         "opening_state": copy.deepcopy(scene["entry"]),
