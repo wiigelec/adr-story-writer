@@ -414,12 +414,13 @@ def task_scene_runtime() -> bool:
             "FS-003: compiled scene contract lost governed scene movement or shape",
         ):
             return False
-        prior = scene_contract["continuity"]["immediate_prior_manuscript"]
+        prior = scene_contract["continuity"]["immediate_prior_scene"]
         if not check(
             isinstance(prior, dict)
-            and prior["plot_scope"] == "scene-001-arrival"
-            and "Mara arrives at Red Hollow" in prior["content"],
-            "FS-003: immediate same-viewpoint accepted continuity was not compiled",
+            and prior["id"] == "scene-001-arrival"
+            and prior["exit"] == "Eli says the relay is dead."
+            and "content" not in prior,
+            "FS-003: immediate same-viewpoint Plot state was not compiled safely",
         ):
             return False
         if not check(

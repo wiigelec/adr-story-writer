@@ -522,8 +522,22 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
 
     prior_manuscript: list[dict[str, Any]] = []
     current_target_manuscript: list[dict[str, Any]] = []
-    immediate_prior_manuscript: dict[str, Any] | None = None
+    immediate_prior_scene: dict[str, Any] | None = None
     scene_ordinal = scene.get("ordinal")
+    if isinstance(scene_ordinal, int):
+        prior_scene = next(
+            (
+                item
+                for item in dataset.get("plot", {}).get("sequence", [])
+                if isinstance(item, dict)
+                and item.get("ordinal") == scene_ordinal - 1
+                and item.get("viewpoint") == viewpoint_id
+            ),
+            None,
+        )
+        if isinstance(prior_scene, dict):
+            immediate_prior_scene = _generator_scene(prior_scene, [])
+
     chapters = dataset.get("chapters", {}).get("files", [])
     if isinstance(scene_ordinal, int) and isinstance(chapters, list):
         for chapter in chapters:
@@ -543,26 +557,6 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
                 and chapter["ordinal"] < scene_ordinal
             ):
                 prior_manuscript.append(rendered)
-                if chapter["ordinal"] == scene_ordinal - 1:
-                    prior_scope = chapter.get("plot_scope")
-                    prior_scene = (
-                        next(
-                            (
-                                item
-                                for item in dataset.get("plot", {}).get("sequence", [])
-                                if isinstance(item, dict)
-                                and item.get("id") == prior_scope
-                            ),
-                            None,
-                        )
-                        if isinstance(prior_scope, str)
-                        else None
-                    )
-                    if (
-                        isinstance(prior_scene, dict)
-                        and prior_scene.get("viewpoint") == viewpoint_id
-                    ):
-                        immediate_prior_manuscript = copy.deepcopy(rendered)
 
     protected_material = [
         item
@@ -584,7 +578,7 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         "accepted_dependencies": visible_dependencies,
         "prose_guidance": _generator_prose(prose),
         "accepted_prior_manuscript": prior_manuscript,
-        "immediate_prior_manuscript": immediate_prior_manuscript,
+        "immediate_prior_scene": immediate_prior_scene,
         "current_target_manuscript": current_target_manuscript,
     }
 
@@ -685,11 +679,20 @@ def _compile_scene_contract(
         and artifact["closing_shape"]
     ]
 
-    immediate_prior = generator.get("immediate_prior_manuscript")
+    immediate_prior = generator.get("immediate_prior_scene")
     continuity_prior = (
         {
             key: copy.deepcopy(immediate_prior[key])
-            for key in ("id", "revision", "ordinal", "plot_scope", "content")
+            for key in (
+                "id",
+                "title",
+                "revision",
+                "ordinal",
+                "viewpoint",
+                "setting",
+                "entry",
+                "exit",
+            )
             if key in immediate_prior
         }
         if isinstance(immediate_prior, dict)
@@ -722,7 +725,7 @@ def _compile_scene_contract(
             "entities": entities,
             "facts": continuity_facts,
             "prior_scene_states": prior_scene_states,
-            "immediate_prior_manuscript": continuity_prior,
+            "immediate_prior_scene": continuity_prior,
         },
         "invention_policy": {
             "creative_allowance": copy.deepcopy(creative_allowance),
