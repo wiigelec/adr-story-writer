@@ -536,7 +536,15 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
             None,
         )
         if isinstance(prior_scene, dict):
-            immediate_prior_scene = _generator_scene(prior_scene, [])
+            prior_basis = _authority_basis(
+                prior_scene,
+                context=(
+                    f"{scene_id}: immediate prior Plot scene "
+                    f"{prior_scene.get('id')}"
+                ),
+            )
+            if prior_basis == "accepted":
+                immediate_prior_scene = _generator_scene(prior_scene, [])
 
     chapters = dataset.get("chapters", {}).get("files", [])
     if isinstance(scene_ordinal, int) and isinstance(chapters, list):
@@ -598,6 +606,11 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         "prose_control_revisions": {
             name: _revision_map(artifacts) for name, artifacts in prose.items()
         },
+        "immediate_prior_scene_revisions": (
+            _revision_map([immediate_prior_scene])
+            if isinstance(immediate_prior_scene, dict)
+            else {}
+        ),
         "prior_manuscript_revisions": _revision_map(prior_manuscript),
         "current_target_manuscript_revisions": _revision_map(
             current_target_manuscript
@@ -663,7 +676,7 @@ def _compile_scene_contract(
     narrative_movement = (
         copy.deepcopy(required_movements)
         if isinstance(required_movements, list) and required_movements
-        else copy.deepcopy(may_reveal)
+        else []
     )
 
     opening_shapes = [
@@ -861,6 +874,9 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
             + contract["candidate_dependencies"]
         },
         "prose_controls": copy.deepcopy(projection["prose_control_revisions"]),
+        "prior_scene": copy.deepcopy(
+            projection["immediate_prior_scene_revisions"]
+        ),
         "prior_manuscript": copy.deepcopy(projection["prior_manuscript_revisions"]),
         "current_target_manuscript": copy.deepcopy(
             projection["current_target_manuscript_revisions"]

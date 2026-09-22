@@ -495,9 +495,56 @@ def task_scene_runtime() -> bool:
         ):
             return False
         if not check(
+            selected["prior_scene"].get("scene-001-arrival")
+            == "plot-scene-001-r1",
+            "FS-003: compiled prior Plot revision missing from package provenance",
+        ):
+            return False
+        if not check(
             selected["prior_manuscript"].get("manuscript-scene-001")
             == "manuscript-scene-001-r1",
             "FS-003: prior Manuscript revision missing from package provenance",
+        ):
+            return False
+
+        candidate_prior = copy.deepcopy(env["session"].dataset)
+        for prior_scene in candidate_prior["plot"]["sequence"]:
+            if prior_scene.get("id") == "scene-001-arrival":
+                prior_scene["authority_class"] = "candidate_semantic"
+        candidate_prior_package = rt.build_generation_package(
+            rt.build_production_contract(
+                candidate_prior,
+                "scene-002-signal-shed",
+            )
+        )
+        if not check(
+            candidate_prior_package["generator_payload"]["scene_contract"][
+                "continuity"
+            ]["immediate_prior_scene"]
+            is None
+            and candidate_prior_package["selected_revisions"]["prior_scene"]
+            == {},
+            "FS-003: candidate prior Plot state silently governed continuity",
+        ):
+            return False
+
+        no_movement = copy.deepcopy(env["session"].dataset)
+        for target_scene in no_movement["plot"]["sequence"]:
+            if target_scene.get("id") == "scene-002-signal-shed":
+                target_scene.pop("required_movements", None)
+        no_movement_contract = rt.build_production_contract(
+            no_movement,
+            "scene-002-signal-shed",
+        )
+        no_movement_scene = no_movement_contract["scene_contract"]
+        if not check(
+            no_movement_scene["narrative_movement"] == []
+            and no_movement_scene["information_access"]["may_reveal"]
+            == [
+                "The relay is not the primary fault.",
+                "A floorboard appears disturbed.",
+            ],
+            "FS-003: reveal permission was promoted into narrative movement",
         ):
             return False
 
