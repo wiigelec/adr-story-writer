@@ -358,7 +358,7 @@ def task_scene_runtime() -> bool:
             return False
 
         compiler_payload = json.dumps(
-            context["generator_visible"],
+            context["compiler_context"],
             ensure_ascii=False,
         ).lower()
         reviewer_payload = json.dumps(
@@ -540,6 +540,7 @@ def task_scene_runtime() -> bool:
         no_movement_scene = no_movement_contract["scene_contract"]
         if not check(
             no_movement_scene["narrative_movement"] == []
+            and no_movement_contract["narrative_movement"] == []
             and no_movement_scene["information_access"]["may_reveal"]
             == [
                 "The relay is not the primary fault.",
@@ -883,12 +884,12 @@ print(json.dumps({
         .get("target_scope")
     ),
     "current_target_count": len(
-        context["generator_visible"]["current_target_manuscript"]
+        context["compiler_context"]["current_target_manuscript"]
     ),
     "current_target_has_provenance": (
-        bool(context["generator_visible"]["current_target_manuscript"])
+        bool(context["compiler_context"]["current_target_manuscript"])
         and "generation_provenance"
-        in context["generator_visible"]["current_target_manuscript"][0]
+        in context["compiler_context"]["current_target_manuscript"][0]
     ),
     "next_scene": next_scene.get("id") if next_scene else None,
     "next_context": next_context.get("target_scope"),
@@ -901,11 +902,11 @@ print(json.dumps({
     ),
     "next_prior_manuscript_contains_provenance": any(
         "generation_provenance" in item or "review" in item
-        for item in next_context["generator_visible"]["accepted_prior_manuscript"]
+        for item in next_context["compiler_context"]["accepted_prior_manuscript"]
     ),
     "next_prior_plot_dependency_contains_purpose": any(
         item.get("surface") == "plot.sequence" and "purpose" in item
-        for item in next_context["generator_visible"]["accepted_dependencies"]
+        for item in next_context["compiler_context"]["accepted_dependencies"]
     ),
 }))
 """

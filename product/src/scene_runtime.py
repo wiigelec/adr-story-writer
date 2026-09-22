@@ -428,7 +428,8 @@ def _generator_artifact(artifact: dict[str, Any], viewpoint_id: str) -> dict[str
             }
         return safe
 
-    # The active viewpoint may expose positively authorized knowledge, but
+    # Preserve active-viewpoint knowledge only as compiler input. Reader-visible
+    # disclosure authority is compiled separately from Plot information access;
     # negative/private epistemic fields can themselves name concealed facts.
     value.pop("does_not_know", None)
     value.pop("intent", None)
@@ -586,7 +587,7 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         "viewpoint_exclusions": copy.deepcopy(viewpoint.get("does_not_know", [])),
         "protected_material": protected_material,
     }
-    generator = {
+    compiler_context = {
         "target_scene": generator_scene,
         "viewpoint": viewpoint_visible,
         "accepted_dependencies": visible_dependencies,
@@ -596,17 +597,17 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         "current_target_manuscript": current_target_manuscript,
     }
 
-    generator_payload = json.dumps(generator, ensure_ascii=False).lower()
+    compiler_payload = json.dumps(compiler_context, ensure_ascii=False).lower()
     for hidden in hidden_dependencies:
         summary = hidden.get("summary")
-        if isinstance(summary, str) and summary.lower() in generator_payload:
-            raise SceneRuntimeError("hidden Canon leaked into generator-visible context")
+        if isinstance(summary, str) and summary.lower() in compiler_payload:
+            raise SceneRuntimeError("hidden Canon leaked into compiler context")
 
     return {
         "target_scope": scene_id,
         "scene_revision": scene["revision"],
         "scene_authority_basis": scene_authority_basis,
-        "generator_visible": generator,
+        "compiler_context": compiler_context,
         "reviewer_only": reviewer,
         "hidden_dependency_ids": sorted(hidden_ids),
         "prose_control_revisions": {
@@ -636,15 +637,15 @@ def _compile_scene_contract(
     prohibited_invention: list[str],
 ) -> dict[str, Any]:
     """Compile generator-ready scene state without creating new story meaning."""
-    generator = projection["generator_visible"]
-    scene = generator["target_scene"]
-    viewpoint = generator["viewpoint"]
+    compiler_context = projection["compiler_context"]
+    scene = compiler_context["target_scene"]
+    viewpoint = compiler_context["viewpoint"]
 
     continuity_facts: list[str] = []
 
     entities: list[dict[str, Any]] = []
     prior_scene_states: list[dict[str, Any]] = []
-    for artifact in generator.get("accepted_dependencies", []):
+    for artifact in compiler_context.get("accepted_dependencies", []):
         if not isinstance(artifact, dict):
             continue
         entity = {
@@ -694,7 +695,7 @@ def _compile_scene_contract(
         and artifact["closing_shape"]
     ]
 
-    immediate_prior = generator.get("immediate_prior_scene")
+    immediate_prior = compiler_context.get("immediate_prior_scene")
     continuity_prior = (
         {
             key: copy.deepcopy(immediate_prior[key])
@@ -754,8 +755,8 @@ def build_production_contract(
     material_style_conflicts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     projection = project_scene_context(dataset, scene_id)
-    scene = projection["generator_visible"]["target_scene"]
-    prose = projection["generator_visible"]["prose_guidance"]
+    scene = projection["compiler_context"]["target_scene"]
+    prose = projection["compiler_context"]["prose_guidance"]
     all_deps = artifact_index(dataset)
 
     accepted_dependencies = []
@@ -828,7 +829,7 @@ def build_production_contract(
         "target_scope": scene_id,
         "stop_boundary": scene["exit"],
         "narrative_movement": copy.deepcopy(
-            scene.get("required_movements", scene.get("purpose"))
+            scene_contract["narrative_movement"]
         ),
         "scene_contract": scene_contract,
         "pseudo_prose": pseudo_prose,
@@ -839,7 +840,7 @@ def build_production_contract(
         "viewpoint_access": {
             "viewpoint": scene["viewpoint"],
             "knowledge": copy.deepcopy(
-                projection["generator_visible"]["viewpoint"].get("knowledge", [])
+                projection["compiler_context"]["viewpoint"].get("knowledge", [])
             ),
         },
         "reveal_concealment": {
