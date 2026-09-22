@@ -145,8 +145,10 @@ def _fixture(root: Path) -> None:
             "surface": "plot.sequence",
             "authority_class": "accepted_semantic",
             "revision": "plot-scene-002-r1",
+            "title": "The Signal Shed",
             "ordinal": 2,
             "viewpoint": "character-mara-venn",
+            "setting": "the signal shed at Red Hollow Relay Station",
             "purpose": "Diagnose the relay without revealing Eli's hidden satchel.",
             "entry": "Mara and Eli enter the signal shed.",
             "required_movements": [
@@ -237,10 +239,24 @@ def _fixture(root: Path) -> None:
             "authority_class": "production_approved",
             "revision": "prose-pseudo-002-r1",
             "target_scope": "scene-002-signal-shed",
+            "opening_shape": "enter through practical diagnosis rather than exposition",
+            "closing_shape": "leave on the stronger west-span lead",
             "units": [
-                "The relay test succeeds.",
-                "Mara notices the floorboard.",
-                "They leave for the west span.",
+                {
+                    "unit_id": "unit-relay",
+                    "primary_mode": "action",
+                    "content_movement": "The relay test succeeds.",
+                },
+                {
+                    "unit_id": "unit-floorboard",
+                    "primary_mode": "internal",
+                    "content_movement": "Mara notices the floorboard.",
+                },
+                {
+                    "unit_id": "unit-exit",
+                    "primary_mode": "action",
+                    "content_movement": "They leave for the west span.",
+                },
             ],
         },
         "scene-003-first-message": {
@@ -375,7 +391,10 @@ def task_scene_runtime() -> bool:
             return False
         scene_contract = generation["scene_contract"]
         if not check(
-            scene_contract["opening_state"]
+            scene_contract["identity"]["title"] == "The Signal Shed"
+            and scene_contract["setting"]
+            == "the signal shed at Red Hollow Relay Station"
+            and scene_contract["opening_state"]
             == "Mara and Eli enter the signal shed."
             and scene_contract["stop_condition"]
             == "Mara decides to inspect the west span."
@@ -384,18 +403,45 @@ def task_scene_runtime() -> bool:
                 "Mara verifies that the relay is intact.",
                 "Mara notices a recently disturbed floorboard.",
                 "Eli redirects attention toward the west span.",
-            ],
-            "FS-003: compiled scene contract lost governed scene movement",
+            ]
+            and scene_contract["realization_shape"]
+            == {
+                "opening": [
+                    "enter through practical diagnosis rather than exposition"
+                ],
+                "closing": ["leave on the stronger west-span lead"],
+            },
+            "FS-003: compiled scene contract lost governed scene movement or shape",
+        ):
+            return False
+        prior = scene_contract["continuity"]["immediate_prior_manuscript"]
+        if not check(
+            isinstance(prior, dict)
+            and prior["plot_scope"] == "scene-001-arrival"
+            and "Mara arrives at Red Hollow" in prior["content"],
+            "FS-003: immediate same-viewpoint accepted continuity was not compiled",
         ):
             return False
         if not check(
             generation["pseudo_prose"]
             == [
-                "The relay test succeeds.",
-                "Mara notices the floorboard.",
-                "They leave for the west span.",
+                {
+                    "unit_id": "unit-relay",
+                    "primary_mode": "action",
+                    "content_movement": "The relay test succeeds.",
+                },
+                {
+                    "unit_id": "unit-floorboard",
+                    "primary_mode": "internal",
+                    "content_movement": "Mara notices the floorboard.",
+                },
+                {
+                    "unit_id": "unit-exit",
+                    "primary_mode": "action",
+                    "content_movement": "They leave for the west span.",
+                },
             ],
-            "FS-003: production-approved pseudo-prose was not preserved in order",
+            "FS-003: structured production-approved pseudo-prose was not preserved in order",
         ):
             return False
         compiled_payload = json.dumps(generation, ensure_ascii=False).lower()
