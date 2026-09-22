@@ -338,6 +338,24 @@ def task_scene_runtime() -> bool:
         contract = env["contract"]
         package = env["package"]
 
+        production_rules = json.loads(
+            (ROOT / "ruleset/production.json").read_text(encoding="utf-8")
+        )
+        if not check(
+            "generator_payload"
+            in production_rules["generation_package"]["required_fields"]
+            and production_rules["information_access"][
+                "supports_generator_visible_context"
+            ]
+            is False
+            and production_rules["information_access"][
+                "supports_compiled_generator_payload"
+            ]
+            is True,
+            "FS-003: production Ruleset still advertises the retired broad generator context",
+        ):
+            return False
+
         generator_payload = json.dumps(
             context["generator_visible"],
             ensure_ascii=False,
