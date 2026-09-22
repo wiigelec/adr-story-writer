@@ -361,6 +361,56 @@ def task_scene_runtime() -> bool:
         ):
             return False
         if not check(
+            "generator_visible_context" not in package,
+            "FS-003: package still exposes broad upstream generator context",
+        ):
+            return False
+        generation = package.get("generator_payload")
+        if not check(
+            isinstance(generation, dict)
+            and set(generation)
+            == {"scene_contract", "style_projection", "pseudo_prose"},
+            "FS-003: package generator payload is not the compiled scene/style/pseudo-prose interface",
+        ):
+            return False
+        scene_contract = generation["scene_contract"]
+        if not check(
+            scene_contract["opening_state"]
+            == "Mara and Eli enter the signal shed."
+            and scene_contract["stop_condition"]
+            == "Mara decides to inspect the west span."
+            and scene_contract["narrative_movement"]
+            == [
+                "Mara verifies that the relay is intact.",
+                "Mara notices a recently disturbed floorboard.",
+                "Eli redirects attention toward the west span.",
+            ],
+            "FS-003: compiled scene contract lost governed scene movement",
+        ):
+            return False
+        if not check(
+            generation["pseudo_prose"]
+            == [
+                "The relay test succeeds.",
+                "Mara notices the floorboard.",
+                "They leave for the west span.",
+            ],
+            "FS-003: production-approved pseudo-prose was not preserved in order",
+        ):
+            return False
+        compiled_payload = json.dumps(generation, ensure_ascii=False).lower()
+        if not check(
+            "dispatch satchel" not in compiled_payload,
+            "FS-003: concealed raw Plot purpose leaked into compiled generator payload",
+        ):
+            return False
+        if not check(
+            "accepted_dependencies" not in generation
+            and "accepted_prior_manuscript" not in generation,
+            "FS-003: raw upstream artifacts remain routine generator inputs",
+        ):
+            return False
+        if not check(
             package == rt.build_generation_package(copy.deepcopy(contract)),
             "FS-003: generation package is not stable for identical governing state",
         ):

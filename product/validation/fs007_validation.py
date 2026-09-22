@@ -421,6 +421,12 @@ def task_generation_package():
     ):
         return False
     if not check(
+        package["generator_payload"]["style_projection"]
+        == contract["style_projection"],
+        "compiled generator payload did not receive resolved style projection",
+    ):
+        return False
+    if not check(
         package["selected_revisions"]["style_profile"]
         == {"author-default": approved["revision"]},
         "generation package omitted selected style-profile revision",
