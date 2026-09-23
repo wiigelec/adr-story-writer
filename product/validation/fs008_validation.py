@@ -42,7 +42,7 @@ def _dataset() -> dict[str, Any]:
         "ruleset_binding": {
             "application": "adr-story-writer",
             "component": "ruleset",
-            "version": "0.4.0",
+            "version": "0.5.0",
         },
         "compatibility_history": [],
         "instance": {"id": "fs008-fixture"},
@@ -136,6 +136,11 @@ def task_ruleset_contract() -> bool:
         for item in compatibility["migration"]["supported_transitions"]
         if isinstance(item, dict)
     }
+    rebind_ids = {
+        item.get("id")
+        for item in compatibility["rebinding"]["supported_transitions"]
+        if isinstance(item, dict)
+    }
     return (
         check(
             dep["required_fields"] == ["target_id", "authority_basis", "material"],
@@ -156,6 +161,11 @@ def task_ruleset_contract() -> bool:
         and check(
             "dependency-relations-v1-to-live-alignment-v1" in transition_ids,
             "FS-008: governed legacy dependency migration missing",
+        )
+        and check(
+            compatibility["ruleset_binding"]["current"]["version"] == "0.5.0"
+            and "ruleset-0.4.0-to-0.5.0" in rebind_ids,
+            "FS-008: changed Ruleset realization is not distinctly identified and rebound",
         )
     )
 

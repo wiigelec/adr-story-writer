@@ -42,7 +42,7 @@ def _dataset() -> dict:
         "ruleset_binding": {
             "application": "adr-story-writer",
             "component": "ruleset",
-            "version": "0.4.0",
+            "version": "0.5.0",
         },
         "compatibility_history": [],
         "instance": {"id": "fs007-fixture"},
@@ -511,7 +511,7 @@ def task_rebinding():
     status = COMPAT.classify(dataset, contract=contract)
     if not check(
         status["state"] == "rebinding_required"
-        and status["transition"] == "ruleset-0.3.0-to-0.4.0",
+        and status["transition"] == "ruleset-0.3.0-to-0.5.0",
         "schema-v1 Ruleset 0.3.0 Dataset did not require explicit FS-007 rebind",
     ):
         return False
@@ -523,7 +523,7 @@ def task_rebinding():
     )
     return check(
         rebound["schema"]["version"] == 1
-        and rebound["ruleset_binding"]["version"] == "0.4.0"
+        and rebound["ruleset_binding"]["version"] == "0.5.0"
         and "style_profiles" not in rebound["prose"],
         "FS-007 rebind changed schema or invented author-style state",
     )
