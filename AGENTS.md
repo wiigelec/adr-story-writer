@@ -19,9 +19,22 @@ Read `application.json` and apply its initialization instructions before ordinar
 
 Identify the selected story Dataset and its Ruleset binding, establish compatibility for the requested operation, reconstruct the relevant current Dataset state, and use applicable Story Writer runtime operations rather than manually recreating their mechanics in conversation.
 
-Runtime responsibilities include Dataset reconstruction, compatibility checks, governed artifact and dependency resolution, production-contract and generation-package construction, revision impact analysis, reconciliation mechanics, validation, and Dataset persistence.
+The accepted mechanical runtime implementation is in `product/src/`. Using those accepted runtime operations to operate a story Dataset is normal Story Writer application work. Modifying `product/src/` is repository-governance work and requires the user to explicitly invoke repository-governance mode.
+
+Use these runtime surfaces as the starting points for applicable operations:
+
+- `product/src/authoring_runtime.py` — authoring and governed working-state operations;
+- `product/src/compatibility.py` — Dataset schema, Ruleset binding, compatibility, migration, and rebinding mechanics;
+- `product/src/scene_runtime.py` — scene readiness, production contracts, generation packages, and Dataset reconstruction/persistence support;
+- `product/src/revision_runtime.py` — revision impact, dependency currentness, reconciliation, and governed revision mechanics;
+- `product/src/style_runtime.py` — style selection and resolved style projection;
+- `product/src/generated_view_runtime.py` — derived author-facing views.
+
+Use applicable Story Writer runtime operations rather than manually recreating their mechanics in conversation.
 
 The runtime implements Ruleset-owned behavior; it does not replace the Ruleset as semantic authority. The Agent reasons and orchestrates; the Ruleset governs meaning and valid transitions; the Dataset owns committed story state.
+
+If no story Dataset is available or identifiable, do not invent Dataset state or continue stateful story work from conversational memory. Obtain or select the Dataset before performing an operation that depends on committed story state.
 
 Ordinary Dataset saves belong in the Dataset repository being operated and must not mutate this Ruleset repository.
 
@@ -77,6 +90,6 @@ Preserve runtime `application.json`, runtime Ruleset material, `provenance.json`
 
 This Ruleset repository is not bound to any Dataset instance; Dataset repositories carry their own Ruleset binding metadata.
 
-The local runtime Ruleset is the accepted operational realization. `product/` is the development domain for later Story Writer product work and must not be treated as ordinary runtime story state.
+The local runtime Ruleset is the accepted operational realization. `product/` is the development domain for later Story Writer product work; accepted runtime code under `product/src/` may be used during Story Writer application operation, but `product/` content must not be treated as story Dataset state.
 
 Do not invent application-specific Product Design, Dataset schema, compatibility, migration, or validation meaning from the generic initialized scaffold.
