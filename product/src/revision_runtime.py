@@ -129,7 +129,6 @@ def _relations(artifact: dict[str, Any]) -> list[dict[str, Any]]:
             ):
                 result.append({
                     "target_id": target,
-                    "target_revision": None,
                     "authority_basis": "accepted",
                     "material": True,
                 })
@@ -164,7 +163,6 @@ def _ensure_explicit_relation(
             return relation
     relation = {
         "target_id": target_id,
-        "target_revision": None,
         "authority_basis": "accepted",
         "material": material,
     }
@@ -612,11 +610,23 @@ def _update_relation_to_current(
         old_id,
         material=bool(reconciliation.get("material", True)),
     )
+    legacy_revision_pin = "target_revision" in relation
     relation["target_id"] = new_id
-    relation["target_revision"] = reconciliation["to_revision"]
+    if legacy_revision_pin:
+        relation["target_revision"] = reconciliation["to_revision"]
     relation["authority_basis"] = "accepted"
     if material is not None:
         relation["material"] = material
+
+    alignment = artifact.setdefault("alignment", {})
+    if not isinstance(alignment, dict):
+        raise RevisionRuntimeError("alignment must be an object")
+    dependency_alignment = alignment.setdefault("dependencies", {})
+    if not isinstance(dependency_alignment, dict):
+        raise RevisionRuntimeError("alignment.dependencies must be an object")
+    if old_id != new_id:
+        dependency_alignment.pop(old_id, None)
+    dependency_alignment[new_id] = reconciliation["to_revision"]
 
 
 def reconcile(
@@ -671,7 +681,6 @@ def reconcile(
             replacement_id=replacement_id,
             material_dependencies=[{
                 "target_id": current["upstream_result_id"],
-                "target_revision": current["to_revision"],
                 "authority_basis": "accepted",
                 "material": True,
             }],
@@ -819,6 +828,22 @@ def ensure_artifact_current(dataset: dict[str, Any], artifact: dict[str, Any]) -
             raise SCENE.SceneNotReadyError(
                 f"{artifact.get('id')}: dependency {target_id} is stale"
             )
+        if not isinstance(target_revision, str) or not target_revision:
+            alignment = artifact.get("alignment", {})
+            dependency_alignment = (
+                alignment.get("dependencies", {})
+                if isinstance(alignment, dict)
+                else {}
+            )
+            aligned_revision = dependency_alignment.get(target_id)
+            if (
+                isinstance(aligned_revision, str)
+                and aligned_revision
+                and index[target_id].get("revision") != aligned_revision
+            ):
+                raise SCENE.SceneNotReadyError(
+                    f"{artifact.get('id')}: dependency {target_id} alignment is stale"
+                )
 
 
 def ensure_scene_ready(dataset: dict[str, Any], scene_id: str) -> None:

@@ -24,6 +24,7 @@
     ],
     "optional_control_fields": [
       "dependencies",
+      "alignment",
       "generation_package_id",
       "reconciliation"
     ]
@@ -31,7 +32,6 @@
   "dependency_model": {
     "required_fields": [
       "target_id",
-      "target_revision",
       "authority_basis",
       "material"
     ],
@@ -39,6 +39,9 @@
       "accepted",
       "candidate"
     ],
+    "live_relation_uses_stable_target_identity": true,
+    "target_revision_is_not_live_dependency_identity": true,
+    "alignment_evidence_is_revision_specific": true,
     "material_candidate_dependencies_block_acceptance": true,
     "historical_derivation_is_not_automatically_material": true
   },
@@ -66,6 +69,7 @@
       "authority_class",
       "revision",
       "material_dependencies",
+      "alignment_evidence",
       "production_approval",
       "generation_provenance",
       "reconciliation_state",

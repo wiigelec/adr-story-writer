@@ -138,7 +138,6 @@ def _normalize_dependencies(dataset: dict[str, Any], dependencies: list[str] | N
         ids.append(target_id)
         relations.append({
             "target_id": target_id,
-            "target_revision": revision,
             "authority_basis": basis,
             "material": True,
         })
@@ -193,7 +192,6 @@ def _material_blockers(dataset: dict[str, Any], artifact: dict[str, Any], coordi
                 target = None
             relations.append({
                 "target_id": target_id,
-                "target_revision": target.get("revision") if target else None,
                 "authority_basis": _authority_basis(target),
                 "material": True,
             })
@@ -213,7 +211,15 @@ def _material_blockers(dataset: dict[str, Any], artifact: dict[str, Any], coordi
 
         expected_revision = relation.get("target_revision")
         if not isinstance(expected_revision, str) or not expected_revision:
-            blockers.append(f"dependency {target_id} has unresolved revision")
+            alignment = artifact.get("alignment", {})
+            dependency_alignment = (
+                alignment.get("dependencies", {})
+                if isinstance(alignment, dict)
+                else {}
+            )
+            expected_revision = dependency_alignment.get(target_id)
+        if not isinstance(expected_revision, str) or not expected_revision:
+            blockers.append(f"dependency {target_id} has unresolved alignment")
             continue
         if target.get("revision") != expected_revision:
             blockers.append(f"dependency {target_id} is stale")
@@ -296,6 +302,12 @@ def propose_artifact(dataset: dict[str, Any], surface: str, artifact: dict[str, 
     if dep_ids:
         value["dependencies"] = dep_ids
         value["dependency_relations"] = relations
+        value["alignment"] = {
+            "dependencies": {
+                target_id: _find(dataset, target_id)["revision"]
+                for target_id in dep_ids
+            }
+        }
 
     if assumptions is not None:
         if not isinstance(assumptions, list) or any(not isinstance(x, str) or not x for x in assumptions):
@@ -329,6 +341,12 @@ def revise_candidate(dataset: dict[str, Any], artifact_id: str, changes: dict[st
         dep_ids, relations = _normalize_dependencies(dataset, normalized_changes["dependencies"])
         normalized_changes["dependencies"] = dep_ids
         normalized_changes["dependency_relations"] = relations
+        normalized_changes["alignment"] = {
+            "dependencies": {
+                target_id: _find(dataset, target_id)["revision"]
+                for target_id in dep_ids
+            }
+        }
     history = artifact.setdefault("candidate_revision_history", [])
     if not isinstance(history, list):
         raise AuthoringRuntimeError("candidate_revision_history must be an array")
@@ -410,19 +428,25 @@ def accept_artifacts(dataset: dict[str, Any], artifact_ids: list[str]):
             artifact["acceptance"]["coordination"] = copy.deepcopy(coordination)
         artifact.pop("candidate_status", None)
 
-    # Only dependencies accepted in this same coordinated operation need their
-    # candidate revision advanced to the corresponding accepted revision.
+    # Coordinated acceptance advances alignment evidence to the accepted
+    # revisions without turning the live dependency into a revision pin.
     for artifact in artifacts:
         relations = artifact.get("dependency_relations")
         if not isinstance(relations, list):
             continue
+        alignment = artifact.setdefault("alignment", {})
+        if not isinstance(alignment, dict):
+            raise AuthoringRuntimeError("alignment must be an object")
+        dependency_alignment = alignment.setdefault("dependencies", {})
+        if not isinstance(dependency_alignment, dict):
+            raise AuthoringRuntimeError("alignment.dependencies must be an object")
         for relation in relations:
             if not isinstance(relation, dict):
                 continue
             target_id = relation.get("target_id")
             if target_id in transitions:
-                relation["target_revision"] = transitions[target_id]["accepted_revision"]
                 relation["authority_basis"] = "accepted"
+                dependency_alignment[target_id] = transitions[target_id]["accepted_revision"]
 
     return [copy.deepcopy(artifact) for artifact in artifacts]
 

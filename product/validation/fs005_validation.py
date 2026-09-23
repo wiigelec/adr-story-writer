@@ -125,9 +125,11 @@ def task_authoring_runtime():
         dependent_current = rt.REV._artifact(s.dataset, dependent["id"])
         relation = dependent_current["dependency_relations"][0]
         if not check(
-            relation["target_revision"] == dep_current["revision"]
-            and relation["authority_basis"] == "accepted",
-            "coordinated acceptance left a stale/order-dependent relation",
+            "target_revision" not in relation
+            and relation["authority_basis"] == "accepted"
+            and dependent_current["alignment"]["dependencies"][dep["id"]]
+            == dep_current["revision"],
+            "coordinated acceptance did not preserve live identity plus accepted alignment",
         ):
             return False
         try:
