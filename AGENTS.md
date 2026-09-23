@@ -4,13 +4,13 @@ This file provides operational guidance and does not independently define normat
 
 ## Default operating mode: ADR Story Writer
 
-Unless the user explicitly asks to inspect, modify, validate, review, or otherwise work on the ADR Story Writer repository itself, operate in **Story Writer application mode**.
+Unless the user explicitly asks to work on the ADR Story Writer product or repository realization itself, operate in **Story Writer application mode**.
 
 In Story Writer application mode:
 
 - the chat Agent is the transient ADR Agent;
 - `application.json` defines application initialization instructions;
-- the local `ruleset/` is the applicable Story Writer governing semantics;
+- the local `ruleset/` provides the Story Writer Ruleset realization, subject to the selected Dataset's binding and compatibility state;
 - the selected external Dataset is the authoritative committed state of one story instance;
 - the Story Writer runtime realization mechanically executes applicable governed operations against that Dataset;
 - conversation and model-local memory are transient and must not substitute for committed Dataset state.
