@@ -239,30 +239,161 @@ def task_live_dependency_alignment() -> bool:
 def task_generation_independence() -> bool:
     dataset = _dataset()
     _accepted_scene(dataset)
+
+    # Establish the one bounded automatic Plot convenience that the current
+    # compiler may select: the immediate prior scene. Capture the target package
+    # after that local context exists, then grow the rest of the novel around it.
+    prior = {
+        "id": "scene-scale-012",
+        "surface": "plot.sequence",
+        "authority_class": "accepted_semantic",
+        "revision": "scene-scale-012-r1",
+        "ordinal": 12,
+        "viewpoint": "character-mara",
+        "entry": "Mara approaches the river.",
+        "required_movements": ["Mara sees the river ahead."],
+        "exit": "Mara reaches the riverbank.",
+        "dependencies": ["character-mara"],
+        "dependency_relations": [{
+            "target_id": "character-mara",
+            "authority_basis": "accepted",
+            "material": True,
+        }],
+        "alignment": {
+            "dependencies": {
+                "character-mara": "character-mara-r1",
+            }
+        },
+    }
+    dataset["plot"]["sequence"].append(prior)
+
     before = SCENE.build_generation_package(
         SCENE.build_production_contract(dataset, "scene-013")
     )
+    before_payload_size = len(
+        json.dumps(before["generator_payload"], sort_keys=True)
+    )
 
-    for ordinal in range(1, 101):
-        dataset["chapters"]["files"].append(
-            {
-                "id": f"manuscript-old-{ordinal:03d}",
-                "surface": "manuscript",
-                "authority_class": "accepted_manuscript",
-                "revision": f"manuscript-old-{ordinal:03d}-r1",
-                "ordinal": ordinal,
-                "plot_scope": f"scene-old-{ordinal:03d}",
-                "path": f"chapters/{ordinal:03d}.md",
-                "content": "Earlier prose that must not become target-scene continuity. " * 10,
-            }
-        )
+    # Grow the Dataset to a 100-scene novel-shaped dependency graph. The target
+    # remains scene-013 and scene-scale-012 remains its immediate prior Plot
+    # context. The other 98 scenes, their Canon dependencies, Prose controls,
+    # and accepted Manuscript are deliberately unrelated to the target.
+    for event_number in range(1, 31):
+        dataset["canon"]["events"].append({
+            "id": f"event-scale-{event_number:03d}",
+            "surface": "canon.events",
+            "authority_class": "accepted_semantic",
+            "revision": f"event-scale-{event_number:03d}-r1",
+            "summary": f"Synthetic novel-scale continuity event {event_number}.",
+        })
+
+    other_ordinals = [
+        ordinal
+        for ordinal in range(1, 101)
+        if ordinal not in {12, 13}
+    ]
+    for ordinal in other_ordinals:
+        first_event = (ordinal % 30) + 1
+        second_event = ((ordinal + 11) % 30) + 1
+        dependencies = [
+            "character-mara",
+            f"event-scale-{first_event:03d}",
+            f"event-scale-{second_event:03d}",
+        ]
+        alignment = {
+            target_id: (
+                "character-mara-r1"
+                if target_id == "character-mara"
+                else f"{target_id}-r1"
+            )
+            for target_id in dependencies
+        }
+        scene_id = f"scene-scale-{ordinal:03d}"
+        dataset["plot"]["sequence"].append({
+            "id": scene_id,
+            "surface": "plot.sequence",
+            "authority_class": "accepted_semantic",
+            "revision": f"{scene_id}-r1",
+            "ordinal": ordinal,
+            "viewpoint": "character-mara",
+            "entry": f"Synthetic entry for scene {ordinal}.",
+            "required_movements": [
+                f"Synthetic governed movement for scene {ordinal}."
+            ],
+            "exit": f"Synthetic exit for scene {ordinal}.",
+            "dependencies": dependencies,
+            "dependency_relations": [
+                {
+                    "target_id": target_id,
+                    "authority_basis": "accepted",
+                    "material": True,
+                }
+                for target_id in dependencies
+            ],
+            "alignment": {"dependencies": alignment},
+        })
+        dataset["prose"]["beats"][scene_id] = {
+            "id": f"beats-{scene_id}",
+            "surface": "prose.beats",
+            "authority_class": "production_approved",
+            "revision": f"beats-{scene_id}-r1",
+            "target_scope": scene_id,
+            "beats": [f"Synthetic beat for scene {ordinal}."],
+        }
+        dataset["chapters"]["files"].append({
+            "id": f"manuscript-{scene_id}",
+            "surface": "manuscript",
+            "authority_class": "accepted_manuscript",
+            "revision": f"manuscript-{scene_id}-r1",
+            "ordinal": ordinal,
+            "plot_scope": scene_id,
+            "path": f"chapters/scale-{ordinal:03d}.md",
+            "content": (
+                f"Synthetic accepted prose for unrelated scene {ordinal}. " * 20
+            ),
+        })
+
+    # Add accepted Manuscript for the one immediate-prior scene only after the
+    # baseline package was captured. Its appearance must not alter target-scene
+    # continuity, because prior Manuscript is not a routine continuity source.
+    dataset["chapters"]["files"].append({
+        "id": "manuscript-scene-scale-012",
+        "surface": "manuscript",
+        "authority_class": "accepted_manuscript",
+        "revision": "manuscript-scene-scale-012-r1",
+        "ordinal": 12,
+        "plot_scope": "scene-scale-012",
+        "path": "chapters/scale-012.md",
+        "content": "Immediate-prior prose that must not enter target context. " * 20,
+    })
 
     after = SCENE.build_generation_package(
         SCENE.build_production_contract(dataset, "scene-013")
     )
+    after_payload_size = len(
+        json.dumps(after["generator_payload"], sort_keys=True)
+    )
     payload_text = json.dumps(after["generator_payload"], sort_keys=True)
+    total_dependency_edges = sum(
+        len(scene.get("dependency_relations", []))
+        for scene in dataset["plot"]["sequence"]
+        if isinstance(scene, dict)
+    )
+
     return (
         check(
+            len(dataset["plot"]["sequence"]) == 100,
+            "FS-008: novel-scale fixture did not contain exactly 100 scenes",
+        )
+        and check(
+            total_dependency_edges >= 250,
+            "FS-008: novel-scale fixture did not exercise a material dependency graph",
+        )
+        and check(
+            len(dataset["chapters"]["files"]) == 99,
+            "FS-008: novel-scale fixture did not exercise accepted Manuscript growth",
+        )
+        and check(
             "prior_manuscript" not in after["selected_revisions"],
             "FS-008: package still records routine prior Manuscript revisions",
         )
@@ -273,18 +404,30 @@ def task_generation_independence() -> bool:
         )
         and check(
             before["generator_payload"] == after["generator_payload"],
-            "FS-008: generator payload grew when unrelated prior Manuscript was added",
+            "FS-008: generator payload changed when unrelated novel-scale state was added",
+        )
+        and check(
+            before_payload_size == after_payload_size,
+            "FS-008: generator payload size grew with total story size",
         )
         and check(
             before["id"] == after["id"],
-            "FS-008: package identity changed from unrelated prior Manuscript accumulation",
+            "FS-008: package identity changed from unrelated novel-scale state",
+        )
+        and check(
+            "event-scale-" not in payload_text,
+            "FS-008: unrelated Canon leaked into the target generation package",
+        )
+        and check(
+            "Synthetic accepted prose" not in payload_text
+            and "Immediate-prior prose" not in payload_text,
+            "FS-008: unrelated or prior Manuscript leaked into target generation context",
         )
         and check(
             "The bridge is broken before the later scene begins." in payload_text,
             "FS-008: required Canon continuity was not compiled into target package",
         )
     )
-
 
 def task_compatibility_migration() -> bool:
     dataset = _dataset()
