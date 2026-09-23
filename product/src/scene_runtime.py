@@ -527,7 +527,6 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
     generator_scene = _generator_scene(scene, visible_dependency_ids)
     viewpoint_visible = _generator_artifact(viewpoint, viewpoint_id)
 
-    prior_manuscript: list[dict[str, Any]] = []
     current_target_manuscript: list[dict[str, Any]] = []
     immediate_prior_scene: dict[str, Any] | None = None
     scene_ordinal = scene.get("ordinal")
@@ -554,7 +553,7 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
                 immediate_prior_scene = _generator_scene(prior_scene, [])
 
     chapters = dataset.get("chapters", {}).get("files", [])
-    if isinstance(scene_ordinal, int) and isinstance(chapters, list):
+    if isinstance(chapters, list):
         for chapter in chapters:
             if not isinstance(chapter, dict):
                 raise SceneNotReadyError("chapter manifest contains a non-object entry")
@@ -567,11 +566,6 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
             rendered = _generator_manuscript(chapter)
             if chapter.get("plot_scope") == scene_id:
                 current_target_manuscript.append(rendered)
-            elif (
-                isinstance(chapter.get("ordinal"), int)
-                and chapter["ordinal"] < scene_ordinal
-            ):
-                prior_manuscript.append(rendered)
 
     protected_material = [
         item
@@ -592,7 +586,6 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
         "viewpoint": viewpoint_visible,
         "accepted_dependencies": visible_dependencies,
         "prose_guidance": _generator_prose(prose),
-        "accepted_prior_manuscript": prior_manuscript,
         "immediate_prior_scene": immediate_prior_scene,
         "current_target_manuscript": current_target_manuscript,
     }
@@ -618,7 +611,6 @@ def project_scene_context(dataset: dict[str, Any], scene_id: str) -> dict[str, A
             if isinstance(immediate_prior_scene, dict)
             else {}
         ),
-        "prior_manuscript_revisions": _revision_map(prior_manuscript),
         "current_target_manuscript_revisions": _revision_map(
             current_target_manuscript
         ),
@@ -877,7 +869,6 @@ def build_generation_package(contract: dict[str, Any]) -> dict[str, Any]:
         "prior_scene": copy.deepcopy(
             projection["immediate_prior_scene_revisions"]
         ),
-        "prior_manuscript": copy.deepcopy(projection["prior_manuscript_revisions"]),
         "current_target_manuscript": copy.deepcopy(
             projection["current_target_manuscript_revisions"]
         ),
