@@ -129,7 +129,6 @@ def _relations(artifact: dict[str, Any]) -> list[dict[str, Any]]:
             ):
                 result.append({
                     "target_id": target,
-                    "target_revision": None,
                     "authority_basis": "accepted",
                     "material": True,
                 })
@@ -164,7 +163,6 @@ def _ensure_explicit_relation(
             return relation
     relation = {
         "target_id": target_id,
-        "target_revision": None,
         "authority_basis": "accepted",
         "material": material,
     }
@@ -203,6 +201,7 @@ def _normalize_candidate_dependencies(
 
 
 def _promote_candidate_material_dependencies(
+    dataset: dict[str, Any],
     artifact: dict[str, Any],
     candidate: dict[str, Any],
 ) -> None:
@@ -215,6 +214,12 @@ def _promote_candidate_material_dependencies(
     relations = artifact.setdefault("dependency_relations", [])
     if not isinstance(relations, list):
         raise RevisionRuntimeError("dependency_relations must be an array")
+    alignment = artifact.setdefault("alignment", {})
+    if not isinstance(alignment, dict):
+        raise RevisionRuntimeError("alignment must be an object")
+    dependency_alignment = alignment.setdefault("dependencies", {})
+    if not isinstance(dependency_alignment, dict):
+        raise RevisionRuntimeError("alignment.dependencies must be an object")
 
     for declared_relation in declared:
         if not isinstance(declared_relation, dict):
@@ -223,9 +228,27 @@ def _promote_candidate_material_dependencies(
         if not isinstance(target_id, str) or not target_id:
             raise RevisionRuntimeError("candidate dependency requires target_id")
 
+        target = _artifact(dataset, target_id)
+        target_revision = target.get("revision")
+        if not isinstance(target_revision, str) or not target_revision:
+            raise RevisionRuntimeError(
+                f"candidate dependency {target_id} has no durable current revision"
+            )
+        declared_revision = declared_relation.get("target_revision")
+        if (
+            isinstance(declared_revision, str)
+            and declared_revision
+            and declared_revision != target_revision
+        ):
+            raise SCENE.AcceptanceError(
+                f"candidate dependency {target_id} changed before acceptance"
+            )
+
         promoted = copy.deepcopy(declared_relation)
+        promoted.pop("target_revision", None)
         promoted["material"] = True
         promoted["authority_basis"] = "accepted"
+        dependency_alignment[target_id] = target_revision
 
         matches = [
             index
@@ -512,7 +535,7 @@ def _accept_revision_in_place(
             dependent_id=old_id,
         )
 
-    _promote_candidate_material_dependencies(result_target, candidate_snapshot)
+    _promote_candidate_material_dependencies(dataset, result_target, candidate_snapshot)
 
     return {
         "id": _stable_id(
@@ -612,11 +635,23 @@ def _update_relation_to_current(
         old_id,
         material=bool(reconciliation.get("material", True)),
     )
+    legacy_revision_pin = "target_revision" in relation
     relation["target_id"] = new_id
-    relation["target_revision"] = reconciliation["to_revision"]
+    if legacy_revision_pin:
+        relation["target_revision"] = reconciliation["to_revision"]
     relation["authority_basis"] = "accepted"
     if material is not None:
         relation["material"] = material
+
+    alignment = artifact.setdefault("alignment", {})
+    if not isinstance(alignment, dict):
+        raise RevisionRuntimeError("alignment must be an object")
+    dependency_alignment = alignment.setdefault("dependencies", {})
+    if not isinstance(dependency_alignment, dict):
+        raise RevisionRuntimeError("alignment.dependencies must be an object")
+    if old_id != new_id:
+        dependency_alignment.pop(old_id, None)
+    dependency_alignment[new_id] = reconciliation["to_revision"]
 
 
 def reconcile(
@@ -671,7 +706,6 @@ def reconcile(
             replacement_id=replacement_id,
             material_dependencies=[{
                 "target_id": current["upstream_result_id"],
-                "target_revision": current["to_revision"],
                 "authority_basis": "accepted",
                 "material": True,
             }],
@@ -819,6 +853,22 @@ def ensure_artifact_current(dataset: dict[str, Any], artifact: dict[str, Any]) -
             raise SCENE.SceneNotReadyError(
                 f"{artifact.get('id')}: dependency {target_id} is stale"
             )
+        if not isinstance(target_revision, str) or not target_revision:
+            alignment = artifact.get("alignment", {})
+            dependency_alignment = (
+                alignment.get("dependencies", {})
+                if isinstance(alignment, dict)
+                else {}
+            )
+            aligned_revision = dependency_alignment.get(target_id)
+            if (
+                isinstance(aligned_revision, str)
+                and aligned_revision
+                and index[target_id].get("revision") != aligned_revision
+            ):
+                raise SCENE.SceneNotReadyError(
+                    f"{artifact.get('id')}: dependency {target_id} alignment is stale"
+                )
 
 
 def ensure_scene_ready(dataset: dict[str, Any], scene_id: str) -> None:
@@ -1181,10 +1231,14 @@ class RevisionSession(SCENE.SceneSession):
             "content": accepted["text"],
             "dependency_relations": [{
                 "target_id": scene_id,
-                "target_revision": scene.get("revision"),
                 "authority_basis": "accepted",
                 "material": True,
             }],
+            "alignment": {
+                "dependencies": {
+                    scene_id: scene.get("revision"),
+                }
+            },
             "replaces_revision": previous.get("revision"),
             "manuscript_revision_history": prior_history,
             "reconciliation_history": reconciliation_history,

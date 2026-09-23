@@ -21,6 +21,8 @@
   },
   "impact": {
     "material_dependency_distinct_from_historical_derivation": true,
+    "continuing_dependency_matches_by_stable_target_identity": true,
+    "alignment_revision_change_does_not_replace_dependency_identity": true,
     "outcomes": [
       "still_valid",
       "review_required",
@@ -46,6 +48,8 @@
   },
   "reconciliation": {
     "requires_upstream_change_and_dependent_scope": true,
+    "successful_reconciliation_advances_alignment_evidence": true,
+    "continuing_revision_preserves_live_dependency_target": true,
     "actions": [
       "preserve",
       "revise",

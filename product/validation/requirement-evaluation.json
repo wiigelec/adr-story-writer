@@ -967,6 +967,96 @@
       "tasks": [
         "fs007-style-revision"
       ]
+    },
+    {
+      "requirement": "FS-008-NR-001",
+      "tasks": [
+        "fs008-planning-binding"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-002",
+      "tasks": [
+        "fs008-live-dependency-alignment"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-003",
+      "tasks": [
+        "fs008-live-dependency-alignment"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-004",
+      "tasks": [
+        "fs008-live-dependency-alignment"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-005",
+      "tasks": [
+        "fs008-live-dependency-alignment"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-006",
+      "tasks": [
+        "fs008-live-dependency-alignment"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-007",
+      "tasks": [
+        "fs008-live-dependency-alignment"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-008",
+      "tasks": [
+        "fs008-generation-independence"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-009",
+      "tasks": [
+        "fs008-generation-independence"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-010",
+      "tasks": [
+        "fs008-generation-independence"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-011",
+      "tasks": [
+        "fs008-compatibility-migration"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-012",
+      "tasks": [
+        "fs008-compatibility-migration"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-013",
+      "tasks": [
+        "fs008-compatibility-migration"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-017",
+      "tasks": [
+        "fs008-manifest-bindings"
+      ]
+    },
+    {
+      "requirement": "FS-008-NR-018",
+      "tasks": [
+        "fs008-dataset-boundary"
+      ]
     }
   ]
 }

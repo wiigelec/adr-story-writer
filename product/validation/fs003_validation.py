@@ -502,9 +502,8 @@ def task_scene_runtime() -> bool:
         ):
             return False
         if not check(
-            selected["prior_manuscript"].get("manuscript-scene-001")
-            == "manuscript-scene-001-r1",
-            "FS-003: prior Manuscript revision missing from package provenance",
+            "prior_manuscript" not in selected,
+            "FS-003: routine generation package still accumulates prior Manuscript provenance",
         ):
             return False
 
@@ -900,10 +899,7 @@ print(json.dumps({
             ensure_ascii=False,
         ).lower()
     ),
-    "next_prior_manuscript_contains_provenance": any(
-        "generation_provenance" in item or "review" in item
-        for item in next_context["compiler_context"]["accepted_prior_manuscript"]
-    ),
+    "next_has_prior_manuscript": "accepted_prior_manuscript" in next_context["compiler_context"],
     "next_prior_plot_dependency_contains_purpose": any(
         item.get("surface") == "plot.sequence" and "purpose" in item
         for item in next_context["compiler_context"]["accepted_dependencies"]
@@ -976,8 +972,8 @@ print(json.dumps({
         ):
             return False
         if not check(
-            reconstructed["next_prior_manuscript_contains_provenance"] is False,
-            "FS-003: prior Manuscript exposed review/provenance to generation",
+            reconstructed["next_has_prior_manuscript"] is False,
+            "FS-003: routine scene context still includes prior Manuscript",
         ):
             return False
         if not check(

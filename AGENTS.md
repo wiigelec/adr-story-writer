@@ -1,8 +1,50 @@
-# Repository Agent Guidance
+# Agent Guidance
 
 This file provides operational guidance and does not independently define normative meaning.
 
-## Lifecycle ownership
+## Default operating mode: ADR Story Writer
+
+Unless the user explicitly asks to work on the ADR Story Writer product or repository realization itself, operate in **Story Writer application mode**.
+
+In Story Writer application mode:
+
+- the chat Agent is the transient ADR Agent;
+- `application.json` defines application initialization instructions;
+- the local `ruleset/` provides the Story Writer Ruleset realization, subject to the selected Dataset's binding and compatibility state;
+- the selected external Dataset is the authoritative committed state of one story instance;
+- the Story Writer runtime realization mechanically executes applicable governed operations against that Dataset;
+- conversation and model-local memory are transient and must not substitute for committed Dataset state.
+
+Read `application.json` and apply its initialization instructions before ordinary story work.
+
+Identify the selected story Dataset and its Ruleset binding, establish compatibility for the requested operation, reconstruct the relevant current Dataset state, and use applicable Story Writer runtime operations rather than manually recreating their mechanics in conversation.
+
+The accepted mechanical runtime implementation is in `product/src/`. Using those accepted runtime operations to operate a story Dataset is normal Story Writer application work. Modifying `product/src/` is repository-governance work and requires the user to explicitly invoke repository-governance mode.
+
+Use these runtime surfaces as the starting points for applicable operations:
+
+- `product/src/authoring_runtime.py` — authoring and governed working-state operations;
+- `product/src/compatibility.py` — Dataset schema, Ruleset binding, compatibility, migration, and rebinding mechanics;
+- `product/src/scene_runtime.py` — scene readiness, production contracts, generation packages, and Dataset reconstruction/persistence support;
+- `product/src/revision_runtime.py` — revision impact, dependency currentness, reconciliation, and governed revision mechanics;
+- `product/src/style_runtime.py` — style selection and resolved style projection;
+- `product/src/generated_view_runtime.py` — derived author-facing views.
+
+Use applicable Story Writer runtime operations rather than manually recreating their mechanics in conversation.
+
+The runtime implements Ruleset-owned behavior; it does not replace the Ruleset as semantic authority. The Agent reasons and orchestrates; the Ruleset governs meaning and valid transitions; the Dataset owns committed story state.
+
+If no story Dataset is available or identifiable, do not invent Dataset state or continue stateful story work from conversational memory. Obtain or select the Dataset before performing an operation that depends on committed story state.
+
+Ordinary Dataset saves belong in the Dataset repository being operated and must not mutate this Ruleset repository.
+
+## Repository-governance mode
+
+Enter repository-governance mode only when the user explicitly asks to work on ADR Story Writer itself, such as changing Product Design, Planning, implementation, validation, Ruleset realization, repository structure, or lifecycle state.
+
+When repository-governance mode is active, apply the following repository lifecycle and ownership guidance.
+
+### Lifecycle ownership
 
 A missing consequential semantic decision → **Design**.
 
@@ -12,7 +54,7 @@ An implementation or mechanical-enforcement-construction defect → **Build**.
 
 Validation does not create Design meaning or normative requirements.
 
-## Repository ownership
+### Repository ownership
 
 `repo/` is the reusable repository-development framework.
 
@@ -24,28 +66,30 @@ Validation does not create Design meaning or normative requirements.
 
 Closed architectural boundaries are default-deny. Do not add new direct children or files where the accepted architecture does not allow them.
 
-## Build discipline
+### Build discipline
 
 Consume reviewed Design and Planning. Prefer the simplest implementation that preserves their meaning and satisfies applicable normative requirements.
 
 Do not infer normative intent from implementation behavior.
 
-## Validation
+### Validation
 
 Use `scripts/validate` as the repository-wide mechanical Validation entry point. `repo/scripts/validate` remains authoritative for framework mechanical checks.
 
 Mechanical Validation passing does not establish semantic acceptance.
 
-## Semantic Review and Acceptance
+### Semantic Review and Acceptance
 
 Semantic Review evaluates the realized candidate against the complete applicable Design and Planning result.
 
 `main` represents accepted state. Acceptance occurs only through intentional integration of a satisfactory candidate into `main`.
 
-## App Builder runtime realization
+## Runtime realization boundary
 
-Read the local runtime application definition in `application.json` and apply its application-owned initialization instructions before operating the realization. The local runtime Ruleset defines applicable behavior; persisted Dataset state is external to this repository.
+Preserve runtime `application.json`, runtime Ruleset material, `provenance.json`, and `init-config/` as distinct roles.
 
-Preserve runtime `application.json`, runtime Ruleset material, `provenance.json`, and `init-config/` as distinct roles. This Ruleset repository is not bound to any Dataset instance; Dataset repositories carry their own Ruleset binding metadata. The local runtime Ruleset is the accepted operational realization; repo-spec `product/` is the development domain for later Ruleset product work.
+This Ruleset repository is not bound to any Dataset instance; Dataset repositories carry their own Ruleset binding metadata.
 
-Do not invent application-specific Product Design, Dataset schema, compatibility, migration, or validation meaning from the generic initialized scaffold. Ordinary Dataset saves belong in the Dataset repository being operated and must not mutate this Ruleset repository.
+The local runtime Ruleset is the accepted operational realization. `product/` is the development domain for later Story Writer product work; accepted runtime code under `product/src/` may be used during Story Writer application operation, but `product/` content must not be treated as story Dataset state.
+
+Do not invent application-specific Product Design, Dataset schema, compatibility, migration, or validation meaning from the generic initialized scaffold.
