@@ -126,6 +126,36 @@
         },
         "meaning_preserving": true,
         "semantic_author_decision_required": false
+      },
+      {
+        "id": "dependency-relations-v1-to-live-alignment-v1",
+        "kind": "dependency_relation_alignment",
+        "source": {
+          "schema": {
+            "id": "adr-story-writer.dataset",
+            "version": 1
+          },
+          "ruleset_binding": {
+            "application": "adr-story-writer",
+            "component": "ruleset",
+            "version": "0.4.0"
+          },
+          "requires_legacy_target_revision": true
+        },
+        "target": {
+          "schema": {
+            "id": "adr-story-writer.dataset",
+            "version": 1
+          },
+          "ruleset_binding": {
+            "application": "adr-story-writer",
+            "component": "ruleset",
+            "version": "0.4.0"
+          },
+          "dependency_relation_representation": "stable_identity_with_alignment"
+        },
+        "meaning_preserving": true,
+        "semantic_author_decision_required": false
       }
     ],
     "preserve": [

@@ -1127,23 +1127,27 @@ def open_scene_session(
     dataset = backend.load()
     baseline_digest = hashlib.sha256(_canonical(dataset)).hexdigest()
     status = COMPAT.classify(dataset, requested_operation="ordinary")
-    if status.get("state") == "migration_required":
-        if not authorize_transition:
-            raise CompatibilityGateError(status)
-        dataset = COMPAT.migrate(
-            dataset,
-            status["transition"],
-            authorized=True,
-        )
-        status = COMPAT.classify(dataset, requested_operation="ordinary")
-    elif status.get("state") == "rebinding_required":
-        if not authorize_transition:
-            raise CompatibilityGateError(status)
-        dataset = COMPAT.rebind(
-            dataset,
-            status["transition"],
-            authorized=True,
-        )
+    for _ in range(4):
+        if status.get("state") == "directly_compatible":
+            break
+        if status.get("state") == "migration_required":
+            if not authorize_transition:
+                raise CompatibilityGateError(status)
+            dataset = COMPAT.migrate(
+                dataset,
+                status["transition"],
+                authorized=True,
+            )
+        elif status.get("state") == "rebinding_required":
+            if not authorize_transition:
+                raise CompatibilityGateError(status)
+            dataset = COMPAT.rebind(
+                dataset,
+                status["transition"],
+                authorized=True,
+            )
+        else:
+            break
         status = COMPAT.classify(dataset, requested_operation="ordinary")
 
     if status.get("state") != "directly_compatible":

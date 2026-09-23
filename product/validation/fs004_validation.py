@@ -290,7 +290,12 @@ def task_revision_runtime() -> bool:
             and check(change["from_revision"] == accepted_before["revision"], "FS-004: revision change provenance missing source revision")
             and check(len(promoted) == 1, "FS-004: accepted candidate dependency was duplicated instead of replaced")
             and check(promoted[0].get("material") is True, "FS-004: accepted candidate material dependency did not become current")
-            and check(promoted[0].get("target_revision") == "canon-setting-r1", "FS-004: promoted dependency lost accepted target revision")
+            and check("target_revision" not in promoted[0], "FS-004: promoted dependency remained revision-pinned")
+            and check(
+                event_after.get("alignment", {}).get("dependencies", {}).get("setting-red-hollow")
+                == "canon-setting-r1",
+                "FS-004: promoted dependency lost accepted alignment evidence",
+            )
             and check(promoted[0].get("authority_basis") == "accepted", "FS-004: promoted dependency retained candidate authority basis")
         ):
             return False

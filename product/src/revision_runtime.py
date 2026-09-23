@@ -201,6 +201,7 @@ def _normalize_candidate_dependencies(
 
 
 def _promote_candidate_material_dependencies(
+    dataset: dict[str, Any],
     artifact: dict[str, Any],
     candidate: dict[str, Any],
 ) -> None:
@@ -213,6 +214,12 @@ def _promote_candidate_material_dependencies(
     relations = artifact.setdefault("dependency_relations", [])
     if not isinstance(relations, list):
         raise RevisionRuntimeError("dependency_relations must be an array")
+    alignment = artifact.setdefault("alignment", {})
+    if not isinstance(alignment, dict):
+        raise RevisionRuntimeError("alignment must be an object")
+    dependency_alignment = alignment.setdefault("dependencies", {})
+    if not isinstance(dependency_alignment, dict):
+        raise RevisionRuntimeError("alignment.dependencies must be an object")
 
     for declared_relation in declared:
         if not isinstance(declared_relation, dict):
@@ -221,9 +228,27 @@ def _promote_candidate_material_dependencies(
         if not isinstance(target_id, str) or not target_id:
             raise RevisionRuntimeError("candidate dependency requires target_id")
 
+        target = _artifact(dataset, target_id)
+        target_revision = target.get("revision")
+        if not isinstance(target_revision, str) or not target_revision:
+            raise RevisionRuntimeError(
+                f"candidate dependency {target_id} has no durable current revision"
+            )
+        declared_revision = declared_relation.get("target_revision")
+        if (
+            isinstance(declared_revision, str)
+            and declared_revision
+            and declared_revision != target_revision
+        ):
+            raise SCENE.AcceptanceError(
+                f"candidate dependency {target_id} changed before acceptance"
+            )
+
         promoted = copy.deepcopy(declared_relation)
+        promoted.pop("target_revision", None)
         promoted["material"] = True
         promoted["authority_basis"] = "accepted"
+        dependency_alignment[target_id] = target_revision
 
         matches = [
             index
@@ -510,7 +535,7 @@ def _accept_revision_in_place(
             dependent_id=old_id,
         )
 
-    _promote_candidate_material_dependencies(result_target, candidate_snapshot)
+    _promote_candidate_material_dependencies(dataset, result_target, candidate_snapshot)
 
     return {
         "id": _stable_id(
@@ -1206,10 +1231,14 @@ class RevisionSession(SCENE.SceneSession):
             "content": accepted["text"],
             "dependency_relations": [{
                 "target_id": scene_id,
-                "target_revision": scene.get("revision"),
                 "authority_basis": "accepted",
                 "material": True,
             }],
+            "alignment": {
+                "dependencies": {
+                    scene_id: scene.get("revision"),
+                }
+            },
             "replaces_revision": previous.get("revision"),
             "manuscript_revision_history": prior_history,
             "reconciliation_history": reconciliation_history,

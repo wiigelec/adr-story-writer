@@ -67,6 +67,88 @@ def _legacy_shaped(dataset: dict[str, Any]) -> bool:
     return bool(historical & set(dataset))
 
 
+def _governed_artifacts(dataset: dict[str, Any]):
+    canon = dataset.get("canon", {})
+    for collection in ("character", "setting"):
+        value = canon.get(collection, {})
+        if isinstance(value, dict):
+            for artifact in value.values():
+                if isinstance(artifact, dict):
+                    yield artifact
+    events = canon.get("events", [])
+    if isinstance(events, list):
+        for artifact in events:
+            if isinstance(artifact, dict):
+                yield artifact
+
+    plot = dataset.get("plot", {})
+    synopsis = plot.get("synopsis")
+    if isinstance(synopsis, dict) and synopsis.get("id"):
+        yield synopsis
+    for collection in ("outline", "sequence"):
+        value = plot.get(collection, [])
+        if isinstance(value, list):
+            for artifact in value:
+                if isinstance(artifact, dict):
+                    yield artifact
+
+    prose = dataset.get("prose", {})
+    for collection in ("beats", "modes", "pseudo_prose"):
+        value = prose.get(collection, {})
+        if isinstance(value, dict):
+            for artifact in value.values():
+                if isinstance(artifact, dict):
+                    yield artifact
+
+    files = dataset.get("chapters", {}).get("files", [])
+    if isinstance(files, list):
+        for artifact in files:
+            if isinstance(artifact, dict):
+                yield artifact
+
+
+def _has_legacy_dependency_pins(dataset: dict[str, Any]) -> bool:
+    for artifact in _governed_artifacts(dataset):
+        relations = artifact.get("dependency_relations", [])
+        if isinstance(relations, list) and any(
+            isinstance(relation, dict) and "target_revision" in relation
+            for relation in relations
+        ):
+            return True
+    return False
+
+
+def _migrate_dependency_relation_alignment(dataset: dict[str, Any]) -> None:
+    for artifact in _governed_artifacts(dataset):
+        relations = artifact.get("dependency_relations", [])
+        if not isinstance(relations, list):
+            continue
+        for relation in relations:
+            if not isinstance(relation, dict) or "target_revision" not in relation:
+                continue
+            target_id = relation.get("target_id")
+            target_revision = relation.get("target_revision")
+            if not isinstance(target_id, str) or not target_id:
+                raise TransitionError("legacy dependency relation has no target_id")
+            if not isinstance(target_revision, str) or not target_revision:
+                raise TransitionError(
+                    f"legacy dependency relation {target_id} has no usable target_revision"
+                )
+            alignment = artifact.setdefault("alignment", {})
+            if not isinstance(alignment, dict):
+                raise TransitionError("alignment must be an object")
+            dependency_alignment = alignment.setdefault("dependencies", {})
+            if not isinstance(dependency_alignment, dict):
+                raise TransitionError("alignment.dependencies must be an object")
+            existing = dependency_alignment.get(target_id)
+            if existing not in (None, target_revision):
+                raise TransitionError(
+                    f"legacy dependency relation {target_id} conflicts with existing alignment"
+                )
+            dependency_alignment[target_id] = target_revision
+            relation.pop("target_revision", None)
+
+
 def _binding_key(binding: Any) -> tuple[Any, Any, Any] | None:
     if not isinstance(binding, dict):
         return None
@@ -98,7 +180,22 @@ def classify(
 
     if _schema_key(schema) == _schema_key(current_schema):
         if _binding_key(binding) == _binding_key(current_binding):
-            result = {"state": "directly_compatible", "permitted": [requested_operation]}
+            dependency_migration = next(
+                (
+                    transition
+                    for transition in contract["migration"].get("supported_transitions", [])
+                    if transition.get("kind") == "dependency_relation_alignment"
+                ),
+                None,
+            )
+            if dependency_migration and _has_legacy_dependency_pins(dataset):
+                result = {
+                    "state": "migration_required",
+                    "transition": dependency_migration["id"],
+                    "permitted": ["migrate", "inspect", "export", "diagnose"],
+                }
+            else:
+                result = {"state": "directly_compatible", "permitted": [requested_operation]}
         else:
             supported_rebind = None
             for transition in contract["rebinding"].get("supported_transitions", []):
@@ -210,14 +307,37 @@ def migrate(
         raise TransitionError("Dataset does not match the requested supported migration")
 
     migrated = copy.deepcopy(dataset)
-    migrated["schema"] = copy.deepcopy(transition["target"]["schema"])
-    migrated["ruleset_binding"] = copy.deepcopy(transition["target"]["ruleset_binding"])
+    if transition.get("kind") == "dependency_relation_alignment":
+        source_realization = {
+            "schema": copy.deepcopy(migrated.get("schema")),
+            "ruleset_binding": copy.deepcopy(migrated.get("ruleset_binding")),
+            "dependency_relation_representation": "revision_pinned",
+        }
+        _migrate_dependency_relation_alignment(migrated)
+        target_realization = {
+            "schema": copy.deepcopy(migrated.get("schema")),
+            "ruleset_binding": copy.deepcopy(migrated.get("ruleset_binding")),
+            "dependency_relation_representation": "stable_identity_with_alignment",
+        }
+    else:
+        migrated["schema"] = copy.deepcopy(transition["target"]["schema"])
+        migrated["ruleset_binding"] = copy.deepcopy(
+            transition["target"]["ruleset_binding"]
+        )
+        source_realization = {
+            "schema": "legacy_unversioned_v0",
+            "ruleset_binding": "absent",
+        }
+        target_realization = copy.deepcopy(transition["target"])
+
     _append_provenance(
         migrated,
         operation=f"migration:{transition_id}",
-        source_realization={"schema": "legacy_unversioned_v0", "ruleset_binding": "absent"},
-        target_realization=copy.deepcopy(transition["target"]),
-        semantic_author_decision_required=bool(transition.get("semantic_author_decision_required")),
+        source_realization=source_realization,
+        target_realization=target_realization,
+        semantic_author_decision_required=bool(
+            transition.get("semantic_author_decision_required")
+        ),
     )
     return migrated
 
